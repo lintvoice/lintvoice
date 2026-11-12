@@ -1,0 +1,4 @@
+# Links rot: lychee checks them weekly, in the links workflow.
+exclude = ['^mailto:', '^tel:']
+max_concurrency = 8
+no_progress = true

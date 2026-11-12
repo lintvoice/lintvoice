@@ -1,0 +1,41 @@
+name: release
+# A tag vX.Y.Z publishes that version to PyPI with trusted publishing: no token is stored anywhere.
+# PyPI side, once: a trusted publisher for owner lintvoice, repo lintvoice, workflow release.yml, environment pypi.
+on:
+  push:
+    tags: ["v*"]
+# Actions are pinned to commit SHAs (a tag can be moved); the comment gives the version.
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: lintvoice
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write  # the GitHub Release (second channel)
+      id-token: write  # PyPI trusted publishing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: lintvoice, persist-credentials: false }
+      # invoice-examples, a dev dependency expected next to this repo (pyproject.toml)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: invoice-examples, repository: lintvoice/invoice-examples, persist-credentials: false }
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: The tag matches the version in pyproject.toml
+        run: test "v$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")" = "$GITHUB_REF_NAME"
+      - run: uv run pytest -q
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with: { packages-dir: lintvoice/dist }
+      - name: GitHub Release with the same files (a second channel if PyPI is out of reach)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.whl dist/*.tar.gz --repo "$GITHUB_REPOSITORY" --verify-tag --title "$GITHUB_REF_NAME" \
+            --notes "The same files as https://pypi.org/project/lintvoice/${GITHUB_REF_NAME#v}/ (wheel and sdist)."

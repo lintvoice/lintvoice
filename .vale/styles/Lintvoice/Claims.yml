@@ -1,0 +1,8 @@
+extends: existence
+message: "'%s': lintvoice helps check e-invoices; it never certifies them (no certified, compliant, conforme)."
+level: error
+ignorecase: true
+tokens:
+  - 'certif\w*'
+  - 'complian\w*'
+  - 'conform\w*'

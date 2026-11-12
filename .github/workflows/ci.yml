@@ -1,0 +1,77 @@
+name: ci
+on: [push, pull_request]
+# Actions are pinned to commit SHAs (a tag can be moved); the comment gives the version.
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: lintvoice
+
+jobs:
+  checks:
+    # Lint, format, workflow security, known vulnerabilities (locked and lowest allowed versions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: lintvoice, persist-credentials: false }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { repository: lintvoice/invoice-examples, path: invoice-examples, persist-credentials: false }
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uvx ruff@0.17.2 check .
+      - run: uvx ruff@0.17.2 format --check .
+      - run: uvx zizmor@1.31.1 --offline .github/workflows/
+      - name: Wording (Vale) - we help check, we never certify
+        run: docker run --rm -v "$PWD:/docs" -w /docs jdkato/vale@sha256:f5a09410093936d4919d868120786da9789e2652ac321c66a895403eca020ae4 README.md README.fr.md THIRD_PARTY_NOTICES.md  # v3.24.0
+      - name: Known vulnerabilities in the locked dependencies
+        run: |
+          uv export --frozen --no-emit-project --no-hashes --all-groups --no-emit-package invoice-examples -o "$RUNNER_TEMP/locked.txt"
+          uvx pip-audit@2.10.1 --no-deps --disable-pip -r "$RUNNER_TEMP/locked.txt"
+      - name: Known vulnerabilities in the lowest versions our floors allow
+        run: |
+          uv pip compile pyproject.toml --resolution lowest-direct --quiet --no-header -o "$RUNNER_TEMP/lowest.txt"
+          uvx pip-audit@2.10.1 --no-deps --disable-pip -r "$RUNNER_TEMP/lowest.txt"
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: lintvoice, persist-credentials: false }
+      # invoice-examples, a dev dependency expected next to this repo (pyproject.toml)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: invoice-examples, repository: lintvoice/invoice-examples, persist-credentials: false }
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv run --python ${{ matrix.python }} pytest -q
+
+  package:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: lintvoice, persist-credentials: false }
+      # invoice-examples, a dev dependency expected next to this repo (pyproject.toml)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: invoice-examples, repository: lintvoice/invoice-examples, persist-credentials: false }
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv build
+      - name: Wheel in a clean environment
+        run: uvx --isolated --from dist/*.whl lintvoice --version
+      - name: Docker image
+        run: docker build -t lintvoice .
+      - name: The image checks the examples offline
+        working-directory: invoice-examples/examples/fr
+        run: |
+          docker run --rm --network none -v "$PWD:/work" lintvoice check valid.xml valid.pdf
+          docker run --rm --network none -v "$PWD:/work" lintvoice check invalid/BR-FR-10.xml || code=$?
+          test "$code" = 1
+      - name: Known vulnerabilities in the image (fixable library ones fail; OS ones are reported)
+        run: |
+          trivy() { docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c "$@"; }  # 0.76.1
+          trivy image --quiet --scanners vuln --pkg-types library --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 lintvoice
+          trivy image --quiet --scanners vuln --pkg-types os --ignore-unfixed --severity HIGH,CRITICAL lintvoice

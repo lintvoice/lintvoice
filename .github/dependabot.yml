@@ -1,0 +1,16 @@
+version: 2
+# Weekly version updates after a 7-day cooldown (never adopt a same-day release).
+# Security updates are not delayed by the cooldown.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
+  - package-ecosystem: uv
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }

@@ -1,0 +1,72 @@
+[project]
+name = "lintvoice"
+version = "0.1.0"
+description = "Offline e-invoice validator: EN 16931, Factur-X and the French BR-FR rules"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "lxml>=6.1",
+    "pypdf>=6.21.4",  # 7 CVEs (crafted PDFs: infinite loops, memory) fixed in 6.21.3 and 6.21.4
+    "saxonche>=13.1,<14",  # the engine behind every verdict: a new major is adopted once the test suite passes on it
+]
+keywords = ["e-invoice", "validator", "factur-x", "zugferd", "xrechnung", "en16931", "cii", "ubl", "br-fr", "linter", "ci"]
+authors = [{ name = "AllGood Services SAS" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Text Processing :: Markup :: XML",
+]
+
+[project.urls]
+Homepage = "https://lintvoice.com"
+Source = "https://github.com/lintvoice/lintvoice"
+Issues = "https://github.com/lintvoice/lintvoice/issues"
+
+[project.scripts]
+lintvoice = "lintvoice.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.4", "invoice-examples"]
+
+[tool.uv.sources]
+# Local sibling repo until invoice-examples is published on PyPI.
+invoice-examples = { path = "../invoice-examples", editable = true }
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "third_party", "README.md", "README.fr.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "Dockerfile"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "corpus: runs on the official EN 16931 examples (downloaded with the rule packs)",
+]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = [".rules-cache"]
+
+[tool.ruff.lint]
+# Curated set: errors, likely bugs, security, modern syntax, simplifications, Ruff's own rules.
+select = ["E", "F", "W", "B", "S", "UP", "SIM", "RUF", "C4", "PERF"]
+# Long lines are the formatter's call; ×, ✓, « » and other non-ASCII characters are intended; PERF401 flags
+# loops whose side effects (files written, rules seen) a comprehension would hide.
+ignore = ["E501", "RUF001", "RUF002", "RUF003", "PERF401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S603", "S607", "S310"]  # asserts and subprocesses are what tests are made of
