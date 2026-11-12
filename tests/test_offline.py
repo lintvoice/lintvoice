@@ -75,6 +75,8 @@ def test_a_doctype_is_refused_and_nothing_is_fetched(write, listener, doctype):
     url, hits = listener
     xml = _with_doctype(doctype.format(url=url))
     for path in (write("doctype.xml", xml), write("doctype.pdf", invoices.facturx_pdf(xml))):
-        p = subprocess.run([sys.executable, "-m", "lintvoice", "check", str(path)], capture_output=True, text=True)
+        p = subprocess.run(
+            [sys.executable, "-m", "lintvoice", "check", str(path)], capture_output=True, encoding="utf-8"
+        )
         assert p.returncode == 2, p
         assert hits == [], hits

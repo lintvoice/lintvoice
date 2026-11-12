@@ -63,7 +63,7 @@ def test_quiet_still_shows_an_incomplete_file(lintvoice, write):
 def test_no_native_trace_on_stderr(write):
     """In a real process: SaxonC's own error trace must not reach the terminal or the CI log."""
     path = write("ship-to.xml", invoices.xml(edit=_ship_to_with_two_sirets))
-    p = subprocess.run([sys.executable, "-m", "lintvoice", "check", str(path)], capture_output=True, text=True)
+    p = subprocess.run([sys.executable, "-m", "lintvoice", "check", str(path)], capture_output=True, encoding="utf-8")
     assert p.returncode == 4, p
     assert p.stderr == "", p.stderr
     assert "could not run on this file" in p.stdout

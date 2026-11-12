@@ -186,7 +186,17 @@ def parser():
     return p
 
 
+def _utf8_when_not_a_terminal():
+    """Reports carry ✓ ✗ · and the French rule messages. A pipe or a file gets UTF-8 on every platform: on Windows,
+    Python would use the ANSI code page (cp1252), which cannot encode ✓. Python itself makes UTF-8 the default from
+    3.15 (PEP 686). A terminal keeps Python's own handling."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure") and not stream.isatty():
+            stream.reconfigure(encoding="utf-8")
+
+
 def main(argv=None, out=None):
+    _utf8_when_not_a_terminal()
     args = parser().parse_args(argv)
     return args.func(args, out or sys.stdout)
 

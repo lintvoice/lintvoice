@@ -81,19 +81,34 @@ def _cases():
 CASES = _cases()
 
 
+# Peak memory is measured from a small wrapper process that only starts lintvoice. On Linux, a child's peak (ru_maxrss)
+# also counts the memory it had before exec, that is its parent's (fs/exec.c, setmax_mm_hiwater_rss:
+# https://github.com/torvalds/linux/blob/v6.12/fs/exec.c#L1012). Started from pytest, which runs the engine in-process
+# for other tests, every run would report pytest's memory. The wrapper adds a few MiB.
+PEAK = (
+    "import resource, subprocess, sys; code = subprocess.run(sys.argv[2:]).returncode; "
+    "open(sys.argv[1], 'w').write(str(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss)); sys.exit(code)"
+)
+
+
 @pytest.mark.parametrize("name", list(CASES))
-def test_hostile_file_gets_a_clean_answer_within_budget(write, name):
+def test_hostile_file_gets_a_clean_answer_within_budget(write, tmp_path, name):
     data, expected = CASES[name]
     path = write(name, data)
+    lintvoice = [sys.executable, "-m", "lintvoice", "check", str(path)]
+    peak_file = tmp_path / "peak.txt"
     start = time.monotonic()
     p = subprocess.run(
-        [sys.executable, "-m", "lintvoice", "check", str(path)], capture_output=True, text=True, timeout=TIME_BUDGET
+        [sys.executable, "-c", PEAK, str(peak_file), *lintvoice] if resource is not None else lintvoice,
+        capture_output=True,
+        encoding="utf-8",
+        timeout=TIME_BUDGET,
     )
     elapsed = time.monotonic() - start
     assert p.returncode == expected, (p.returncode, p.stdout[-500:], p.stderr[-500:])
     assert "Traceback" not in p.stdout + p.stderr
     assert elapsed < TIME_BUDGET
     if resource is not None:
-        peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+        peak = int(peak_file.read_text())
         peak_mib = peak / (1 << 20) if sys.platform == "darwin" else peak / 1024  # bytes on macOS, KiB on Linux
-        assert peak_mib < MEMORY_BUDGET, f"{peak_mib:.0f} MiB (the largest child process so far)"
+        assert peak_mib < MEMORY_BUDGET, f"{peak_mib:.0f} MiB"

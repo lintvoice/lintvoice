@@ -13,7 +13,7 @@ def test_version(lintvoice):
 
 
 def test_module_entry_point_runs():
-    r = subprocess.run([sys.executable, "-m", "lintvoice", "--version"], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "-m", "lintvoice", "--version"], capture_output=True, encoding="utf-8")
     assert r.returncode == 0
     assert __version__ in r.stdout
 
@@ -81,3 +81,17 @@ def test_install_writes_a_manifest(rules):
     for pack in rulepacks.PACKS.values():
         manifest = rulepacks.pack_path(pack, rules) / ".installed.json"
         assert pack.version in manifest.read_text()
+
+
+def test_output_to_a_pipe_is_utf8_whatever_the_locale(write):
+    """On Windows, a pipe or a file gets the ANSI code page (cp1252), which cannot encode ✓: lintvoice crashed with a
+    traceback. PYTHONIOENCODING=cp1252 reproduces that on any system."""
+    import os
+
+    import invoices
+
+    path = write("ok.xml", invoices.xml())
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    p = subprocess.run([sys.executable, "-m", "lintvoice", "check", str(path)], capture_output=True, env=env)
+    assert p.returncode == 0, p.stderr.decode("utf-8", errors="replace")
+    assert "✓" in p.stdout.decode("utf-8")
