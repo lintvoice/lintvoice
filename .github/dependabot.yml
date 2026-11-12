@@ -14,3 +14,8 @@ updates:
     directory: /
     schedule: { interval: weekly }
     cooldown: { default-days: 7 }
+    # The image keeps a Python version the test suite covers: patch releases only. A newer Python comes into the
+    # test matrix first.
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
