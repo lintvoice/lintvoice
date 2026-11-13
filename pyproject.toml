@@ -38,11 +38,7 @@ Issues = "https://github.com/lintvoice/lintvoice/issues"
 lintvoice = "lintvoice.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8.4", "invoice-examples"]
-
-[tool.uv.sources]
-# Local sibling repo until invoice-examples is published on PyPI.
-invoice-examples = { path = "../invoice-examples", editable = true }
+dev = ["pytest>=8.4", "invoice-examples==0.1.0"]
 
 [build-system]
 requires = ["hatchling>=1.27"]

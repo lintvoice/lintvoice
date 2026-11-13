@@ -35,22 +35,14 @@ wheels = [
 [[package]]
 name = "invoice-examples"
 version = "0.1.0"
-source = { editable = "../invoice-examples" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
     { name = "pypdf" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "lxml", specifier = ">=6.1" },
-    { name = "pypdf", specifier = ">=6.21.4" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.4" },
-    { name = "saxonche", specifier = ">=13.1,<14" },
+sdist = { url = "https://files.pythonhosted.org/packages/51/d9/af4fee416d7efc3e7d4b597137403b205ba2f0da651656aa175f4b701393/invoice_examples-0.1.0.tar.gz", hash = "sha256:e5657564063953884914bbea743cacdb585783407293d001dd8a501f5ae667c2", size = 87186, upload-time = "2026-11-13T09:06:39.81Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/24/fff7bee7e991ae64df06260fb37ccf97b6f190ff2df668515f1c361d8698/invoice_examples-0.1.0-py3-none-any.whl", hash = "sha256:6e3048e1b48e6a1e91f9b20af7b7c621a8b0778d672048d74fffe430b1837f61", size = 21483, upload-time = "2026-11-13T09:06:38.522Z" },
 ]
 
 [[package]]
@@ -78,7 +70,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "invoice-examples", editable = "../invoice-examples" },
+    { name = "invoice-examples", specifier = "==0.1.0" },
     { name = "pytest", specifier = ">=8.4" },
 ]
 
