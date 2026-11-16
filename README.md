@@ -10,7 +10,7 @@ It starts with the European standard, then adds each country's own rules. It wor
 
 lintvoice reads CII XML, UBL XML (invoices and credit notes) and Factur-X / ZUGFeRD PDFs. Results are grouped by rule (e.g. one missing VAT number shows up once, not for every faulty invoice line).
 
-> Status: 0.1.0, the first release. Options and the JSON output may still change before 1.0.
+> Status: 0.1.1. Options and the JSON output may still change before 1.0.
 
 ## Quick start
 
