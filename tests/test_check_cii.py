@@ -146,6 +146,22 @@ def test_minimum_profile_skips_en16931_and_br_fr(lintvoice, write):
     assert "EN 16931 1.3.17" not in r.out.split("\n")[0]
 
 
+def test_basic_wl_profile_runs_its_own_rules(lintvoice, write):
+    """France_RFE names the BASIC WL profile rules FACTUR-X_BASIC-WL.xslt (with a hyphen): 0.1.0 looked for
+    FACTUR-X_BASICWL.xslt and stopped with a traceback on every BASIC WL invoice."""
+    r = lintvoice(
+        "check",
+        "--format",
+        "json",
+        write("bwl.xml", invoices.xml(invoices.french(profile="urn:factur-x.eu:1p0:basicwl"))),
+    )
+    report = json.loads(r.out)
+    (f,) = report["files"]
+    assert "Traceback" not in r.out + r.err
+    assert f["not_run"] == []
+    assert "Factur-X 1.09.2 BASIC WL" in [rs["name"] for rs in f["rule_sets"]]
+
+
 def test_unknown_profile_is_said(lintvoice, write):
     r = lintvoice("check", write("u.xml", invoices.xml(invoices.french(profile="urn:example:unknown"))))
     assert "Unknown specification identifier (BT-24) 'urn:example:unknown'" in r.out

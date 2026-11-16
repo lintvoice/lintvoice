@@ -12,8 +12,10 @@ from . import rulepacks
 
 SVRL = {"svrl": "http://purl.oclc.org/dsdl/svrl"}
 FRANCE_RFE = Path("FNFE_RFE_INVOICE")
-# Factur-X profiles whose XSD and profile rules France_RFE 1.4.0.04 ships.
+# Factur-X profiles whose XSD and profile rules France_RFE 1.4.0.04 ships: folder, and the name of the profile rules
+# file (BASIC WL's is FACTUR-X_BASIC-WL.xslt, with a hyphen, in a BASICWL folder).
 FACTURX_DIRS = {"basicwl": "BASICWL", "en16931": "EN16931", "extended": "EXTENDED"}
+FACTURX_RULE_FILES = {"basicwl": "BASIC-WL", "en16931": "EN16931", "extended": "EXTENDED"}
 # Profiles that carry a full EN 16931 invoice (MINIMUM and BASIC WL do not).
 NOT_FULL_INVOICE = ("minimum", "basicwl")
 
@@ -124,7 +126,7 @@ def select(doc, rules="auto"):
                         "factur-x",
                         f"Factur-X 1.09.2 {_fx_profile_label(doc.profile)}",
                         "france-rfe",
-                        str(FRANCE_RFE / f"Factur-X/{fx_dir}/2xslt/FACTUR-X_{fx_dir}.xslt"),
+                        str(FRANCE_RFE / f"Factur-X/{fx_dir}/2xslt/FACTUR-X_{FACTURX_RULE_FILES[doc.profile]}.xslt"),
                     )
                 )
             elif doc.profile in ("minimum", "basic"):
@@ -245,10 +247,15 @@ class Engine:
         ]
 
     def _run_schematron(self, rule_set, xml):
+        from saxonche import PySaxonApiError
+
         path = self._file(rule_set)
         if path not in self._xslt:
-            self._xslt[path] = self.proc.new_xslt30_processor().compile_stylesheet(stylesheet_file=str(path))
-        from saxonche import PySaxonApiError
+            try:
+                with _native_stderr_silenced():
+                    self._xslt[path] = self.proc.new_xslt30_processor().compile_stylesheet(stylesheet_file=str(path))
+            except PySaxonApiError as e:  # a rule file that cannot be read or compiled: an incomplete check
+                raise RuleSetFailed(" ".join(str(e).split())) from e
 
         node = self.proc.parse_xml(xml_text=xml.decode("utf-8"))
         try:
