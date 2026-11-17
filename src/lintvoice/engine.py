@@ -47,6 +47,7 @@ class NotRun:
     rule_set: str
     name: str
     error: str
+    path: str = ""  # the rule file, inside its pack
 
 
 class RuleSetFailed(Exception):
@@ -60,6 +61,10 @@ class Result:
     findings: list
     notes: list = field(default_factory=list)
     not_run: list = field(default_factory=list)
+    # for each Schematron file that ran (its path inside its pack), the rule contexts that fired on this invoice:
+    # a rule whose context never fired does not apply to it (rulecheck.answer)
+    fired: dict = field(default_factory=dict)
+    answers: list = field(default_factory=list)  # rulecheck.Answer for each rule asked with --rule
 
     @property
     def errors(self):
@@ -230,6 +235,16 @@ class Engine:
         self.proc = PySaxonProcessor(license=False)
         self._xslt = {}
         self._xsd = {}
+        self._contexts = {}
+
+    def contexts(self, pack, path):
+        """The rule context of each assert in one compiled rule file (rulecheck.contexts), read once."""
+        from .rulecheck import contexts
+
+        if (pack, path) not in self._contexts:
+            file = rulepacks.pack_path(rulepacks.PACKS[pack], self.root) / path
+            self._contexts[pack, path] = contexts(file.read_text(encoding="utf-8")) if file.is_file() else {}
+        return self._contexts[pack, path]
 
     def _file(self, rule_set):
         return rulepacks.pack_path(rulepacks.PACKS[rule_set.pack], self.root) / rule_set.path
@@ -240,11 +255,11 @@ class Engine:
             self._xsd[path] = etree.XMLSchema(etree.parse(str(path)))
         schema = self._xsd[path]
         if schema.validate(etree.fromstring(xml)):
-            return []
+            return [], None
         return [
             Finding("XSD", "error", re.sub(r"\{[^}]*\}", "", e.message), f"line {e.line}", rule_set.id)
             for e in schema.error_log
-        ]
+        ], None
 
     def _run_schematron(self, rule_set, xml):
         from saxonche import PySaxonApiError
@@ -276,24 +291,27 @@ class Engine:
                     rule_set=rule_set.id,
                 )
             )
-        return findings
+        fired = {f.get("context") for f in svrl.xpath("//svrl:fired-rule", namespaces=SVRL)}
+        return findings, fired
 
     def check(self, doc, rules="auto"):
         rule_sets, notes = select(doc, rules)
         rulepacks.require(self.root, {rs.pack for rs in rule_sets})
         xml = doc.xml.lstrip(b"\xef\xbb\xbf")
-        findings, seen, not_run = [], {}, []
+        findings, seen, not_run, fired = [], {}, [], {}
         for rs in rule_sets:
             run = self._run_xsd if rs.kind == "xsd" else self._run_schematron
             try:
-                found = run(rs, xml)
+                found, contexts = run(rs, xml)
             except RuleSetFailed as e:
-                not_run.append(NotRun(rs.id, rs.name, str(e)))
+                not_run.append(NotRun(rs.id, rs.name, str(e), rs.path))
                 continue
+            if contexts is not None:
+                fired[rs.path] = contexts
             for f in found:
                 # The Factur-X profile rules repeat many EN 16931 rules, often from another context, so at
                 # another location: once an earlier rule set has reported a rule id, the later sets' findings
                 # for that id are dropped. Within one rule set, every failure is kept.
                 if seen.setdefault(f.rule, rs.id) == rs.id:
                     findings.append(f)
-        return Result(doc, rule_sets, findings, notes, not_run)
+        return Result(doc, rule_sets, findings, notes, not_run, fired)

@@ -56,6 +56,29 @@ In JSON, each file carries `values`: the business terms read from the invoice (`
 `expected` and `stated` amounts, and the `gap`. Where each business term is read, in CII and UBL, is data:
 [`src/lintvoice/terms.json`](src/lintvoice/terms.json).
 
+### One rule
+
+`--rule ID` answers for one business rule (several `--rule` may be given): the rule fails, finds no error, does not
+apply to the invoice (and why), or could not be checked. The full rule sets run as usual; the answer reads that rule
+only, and the other rules' errors are summed up in one line:
+
+```
+lintvoice check --rule BR-CO-15 invoice.pdf
+```
+
+```
+  BR-CO-15: fails
+  ...
+  Other rules: no errors.
+```
+
+Whether a rule applies comes from the official files: each one reports the rule contexts that fired on the invoice,
+and each rule sits in one context. A rule does not apply when the French rules do not run (the seller is not in
+France), when it exists only for the other syntax (CII or UBL) or for another invoice profile, or when the invoice does
+not hold what it checks. In JSON, each file carries `rules`: for each rule asked, its `answer` (`fails`, `warns`,
+`no-error`, `does-not-apply`, `not-checked`) and, when it does not apply, the `reason` (`seller-not-in-france`,
+`other-syntax`, `other-profile`, `not-in-invoice`).
+
 ## Rule packs: what lintvoice downloads, and why
 
 lintvoice ships no rule files. `lintvoice rules install` downloads each pack once, from its upstream source, at a pinned version:
@@ -100,6 +123,8 @@ Packs go to `~/.cache/lintvoice/rules` (or `$XDG_CACHE_HOME`, `$LINTVOICE_RULES_
 | 2 | A file could not be read as an invoice, or no file was found |
 | 3 | Rule packs are not installed |
 | 4 | No errors found, but a rule set could not run on a file: its official rule file stopped with an error. The check is incomplete, so lintvoice does not say "no errors" |
+
+With `--rule`, the codes speak of the rules asked: 1 when one of them fails, 4 when one of them could not be checked.
 
 ## Not checked yet
 

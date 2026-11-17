@@ -24,4 +24,6 @@ Ou `pip install lintvoice` (Python 3.10 ou plus). Chaque version est aussi publi
 
 Pour les règles de totaux (BR-CO-10, 13, 15 et 16), lintvoice montre le calcul avec les montants de la facture, par exemple : `1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00`. En JSON, chaque fichier porte aussi les valeurs lues dans la facture (`values`).
 
+Pour une seule règle, `lintvoice check --rule BR-CO-15 facture.pdf` répond pour cette règle : elle échoue, elle ne trouve pas d'erreur, elle ne s'applique pas à la facture (et pourquoi), ou elle n'a pas pu être vérifiée. Les erreurs des autres règles tiennent en une ligne.
+
 Détails (jeux de règles, licences, codes de sortie, limites) : [README.md](README.md).

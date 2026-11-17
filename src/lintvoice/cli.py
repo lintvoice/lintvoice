@@ -2,6 +2,7 @@
 
 Exit codes: 0 no errors, 1 errors found, 2 a file could not be read as an invoice, 3 rule packs missing,
 4 no errors found but a rule set could not run on a file (an error inside the official rule file).
+With --rule, the codes speak of the rules asked: 1 one of them fails, 4 one of them could not be checked.
 XML files found while walking a directory are skipped when they are not invoices (a build.xml, a config file);
 a file named on the command line must be an invoice.
 """
@@ -11,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-from . import __version__, document, engine, report, rulepacks
+from . import __version__, document, engine, report, rulecheck, rulepacks
 
 EXIT_OK, EXIT_ERRORS, EXIT_UNREADABLE, EXIT_NO_RULES, EXIT_INCOMPLETE = 0, 1, 2, 3, 4
 INVOICE_SUFFIXES = {".xml", ".pdf"}
@@ -67,6 +68,11 @@ def cmd_check(args, out):
         print(f"lintvoice: {e}", file=sys.stderr)
         return EXIT_NO_RULES
     eng = _engine(root)
+    asked = list(dict.fromkeys(r.strip().upper() for r in args.rule or ()))
+    for rule in asked:
+        if not any(any(rulecheck.belongs(a, rule) for a in eng.contexts(f.pack, f.path)) for f in rulecheck.RULE_FILES):
+            print(f"lintvoice: no rule {rule} in the official rule files", file=sys.stderr)
+            return EXIT_UNREADABLE
     results, failures, skipped, blocks = [], [], [], []
     for path, named in _files(args.paths):
         try:
@@ -87,6 +93,7 @@ def cmd_check(args, out):
             failures.append((path, str(e)))
             blocks.append(report.text_error(path, str(e), style))
             continue
+        result.answers = [rulecheck.answer(eng, result, rule) for rule in asked]
         results.append(result)
         if not (args.quiet and not result.errors and not result.not_run):
             blocks.append(report.text_result(result, style, verbose=args.verbose))
@@ -94,15 +101,12 @@ def cmd_check(args, out):
         what = f"only {len(skipped)} XML file(s) that are not invoices" if skipped else "no .xml or .pdf file"
         print(f"lintvoice: {what} found in the given paths", file=sys.stderr)
         return EXIT_UNREADABLE
-    code = (
-        EXIT_UNREADABLE
-        if failures
-        else EXIT_ERRORS
-        if any(r.errors for r in results)
-        else EXIT_INCOMPLETE
-        if any(r.not_run for r in results)
-        else EXIT_OK
-    )
+    if asked:  # the codes speak of the rules asked
+        answers = [a.answer for r in results for a in r.answers]
+        failed, incomplete = "fails" in answers, "not-checked" in answers
+    else:
+        failed, incomplete = any(r.errors for r in results), any(r.not_run for r in results)
+    code = EXIT_UNREADABLE if failures else EXIT_ERRORS if failed else EXIT_INCOMPLETE if incomplete else EXIT_OK
     if args.format == "json":
         print(report.json_report(results, failures, code, skipped), file=out)
     else:
@@ -166,6 +170,13 @@ def parser():
         default="auto",
         help="auto (default: EN 16931, Factur-X profile rules, BR-FR when the seller is in France) "
         "or a comma list of: " + ", ".join(engine.RULE_CHOICES),
+    )
+    check.add_argument(
+        "--rule",
+        action="append",
+        metavar="ID",
+        help="the answer for one business rule (BR-CO-15): it fails, finds no error, does not apply and why, or could "
+        "not be checked; may be given several times",
     )
     check.add_argument("--format", choices=("text", "json"), default="text")
     check.add_argument("-v", "--verbose", action="store_true", help="full messages and every location")
