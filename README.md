@@ -10,7 +10,7 @@ It starts with the European standard, then adds each country's own rules. It wor
 
 lintvoice reads CII XML, UBL XML (invoices and credit notes) and Factur-X / ZUGFeRD PDFs. Results are grouped by rule (e.g. one missing VAT number shows up once, not for every faulty invoice line).
 
-> Status: 0.1.1. Options and the JSON output may still change before 1.0.
+> Status: 0.2.0. Options and the JSON output may still change before 1.0.
 
 ## Quick start
 
@@ -41,6 +41,20 @@ The image runs as an unprivileged user (UID 10001).
     BT-152: Le taux de TVA (BT-152) doit être exprimé en pourcentage … Taux fourni : "21".
     at /CrossIndustryInvoice/SupplyChainTradeTransaction/IncludedSupplyChainTradeLineItem/… (+1 more)
 ```
+
+### The values behind an error
+
+For the totals rules (BR-CO-10, 13, 15 and 16), lintvoice shows the computation with the invoice's own values:
+
+```
+  error   BR-CO-15  ×1
+    1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00
+```
+
+In JSON, each file carries `values`: the business terms read from the invoice (`terms`, with the identifier
+`schemes` given), its `lines` and its `notes`. A failing totals rule carries `computation`: its `parts`, the
+`expected` and `stated` amounts, and the `gap`. Where each business term is read, in CII and UBL, is data:
+[`src/lintvoice/terms.json`](src/lintvoice/terms.json).
 
 ## Rule packs: what lintvoice downloads, and why
 

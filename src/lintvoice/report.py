@@ -4,7 +4,7 @@ import json
 import textwrap
 from dataclasses import dataclass
 
-from . import __version__
+from . import __version__, explain
 
 # Schema errors come last: a missing element often shows up as a confusing "element not expected".
 LAYER_ORDER = {"en16931": 0, "factur-x": 1, "br-fr": 2, "extended-ctc-fr": 3, "xsd": 4}
@@ -67,8 +67,30 @@ def _summary(result):
     return ", ".join(parts) + "."
 
 
+def _values(result):
+    """The invoice's values, read once per result; None when they cannot be read."""
+    try:
+        return explain.read(result.document.xml, result.document.syntax)
+    except Exception:  # the values are an aid: a file the rules could check never fails for them
+        return None
+
+
+def computation_line(calc):
+    """'1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00'."""
+    if len(calc["parts"]) > 6:
+        terms = f"sum of {len(calc['parts'])} {calc['parts'][0][2]}"
+    else:
+        terms = " ".join(
+            f"{'' if i == 0 and sign == '+' else sign + ' '}{v} ({bt})" for i, (sign, v, bt) in enumerate(calc["parts"])
+        )
+    return (
+        f"{terms} = {calc['expected']}; the invoice states {calc['stated']} ({calc['result']}), a gap of {calc['gap']}"
+    )
+
+
 def text_result(result, style, verbose=False, width=100):
     doc = result.document
+    values = _values(result)
     mark = style.red("✗") if result.errors else style.yellow("!") if result.not_run else style.green("✓")
     lines = [f"{mark} {style.bold(str(doc.path))}", f"  {doc.label}"]
     lines += [f"  {style.dim(n)}" for n in result.notes]
@@ -88,6 +110,9 @@ def text_result(result, style, verbose=False, width=100):
         sev = style.red("error  ") if g.severity == "error" else style.yellow("warning")
         lines.append("")
         lines.append(f"  {sev} {style.bold(g.rule)}  ×{g.count}")
+        calc = explain.computation(g.rule, values) if values else None
+        if calc:
+            lines += textwrap.wrap(computation_line(calc), width=width, initial_indent=indent, subsequent_indent=indent)
         for message, locations in g.messages.items():
             shown = message if verbose or len(message) <= 220 else message[:217] + "…"
             prefix = f"{indent}×{len(locations)} " if len(g.messages) > 1 else indent
@@ -128,6 +153,7 @@ def json_report(results, failures, exit_code, skipped=()):
     files = []
     for r in results:
         d = r.document
+        values = _values(r)
         files.append(
             {
                 "path": str(d.path),
@@ -154,9 +180,12 @@ def json_report(results, failures, exit_code, skipped=()):
                         "rule_set": g.rule_set,
                         "count": g.count,
                         "messages": [{"message": m, "locations": locs} for m, locs in g.messages.items()],
+                        **({"computation": c} if values and (c := explain.computation(g.rule, values)) else {}),
                     }
                     for g in group(r.findings)
                 ],
+                # what the invoice says (business terms, lines, notes): to show an error with the invoice's values
+                "values": values,
             }
         )
     for path, message in failures:

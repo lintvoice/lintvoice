@@ -22,4 +22,6 @@ Ou `pip install lintvoice` (Python 3.10 ou plus). Chaque version est aussi publi
 
 `lintvoice rules install` télécharge les règles officielles depuis leurs sources, en https, et vérifie leur empreinte. Les dossiers de France_RFE qui contiennent des documents AFNOR ne sont jamais extraits. Après cette installation, toutes les vérifications se font sans réseau. Les règles BR-FR s'appliquent quand le pays du vendeur (BT-40) est FR ; `--rules en16931,factur-x,br-fr` les impose.
 
+Pour les règles de totaux (BR-CO-10, 13, 15 et 16), lintvoice montre le calcul avec les montants de la facture, par exemple : `1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00`. En JSON, chaque fichier porte aussi les valeurs lues dans la facture (`values`).
+
 Détails (jeux de règles, licences, codes de sortie, limites) : [README.md](README.md).
