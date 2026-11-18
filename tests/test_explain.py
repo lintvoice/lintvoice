@@ -160,3 +160,9 @@ def test_text_shows_the_rate_of_a_vat_computation(lintvoice, write):
     data = json.loads(lintvoice("check", "--format", "json", path).out)
     group = next(g for g in data["files"][0]["findings"] if g["rule"] == "BR-CO-17")
     assert group["computation"]["gap"] == "2.00" and group["computation"]["group"]["BT-118"] == "S"
+
+
+def test_text_says_when_there_is_nothing_to_add_up(lintvoice, write):
+    path = write("no-line.xml", invoices.xml(edit=invoices.remove("//ram:IncludedSupplyChainTradeLineItem")))
+    text = lintvoice("check", path).out
+    assert "nothing to add up = 0.00; the invoice states 1025.00 (BT-106)" in text

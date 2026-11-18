@@ -101,7 +101,9 @@ def _values(result):
 def computation_line(calc):
     """'1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00'; for a VAT
     breakdown, 'At the rate 20 % (S): 1025.00 (BT-116) × 20 % (BT-119) = 205.00; …'."""
-    if len(calc["parts"]) > 6:
+    if not calc["parts"]:  # nothing to add up: no line, allowance or charge at all
+        terms = "nothing to add up"
+    elif len(calc["parts"]) > 6:
         terms = f"sum of {len(calc['parts'])} {calc['parts'][0][2]}"
     else:
         terms = " ".join(
