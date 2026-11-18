@@ -99,15 +99,20 @@ def _values(result):
 
 
 def computation_line(calc):
-    """'1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00'."""
+    """'1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00'; for a VAT
+    breakdown, 'At the rate 20 % (S): 1025.00 (BT-116) × 20 % (BT-119) = 205.00; …'."""
     if len(calc["parts"]) > 6:
         terms = f"sum of {len(calc['parts'])} {calc['parts'][0][2]}"
     else:
         terms = " ".join(
-            f"{'' if i == 0 and sign == '+' else sign + ' '}{v} ({bt})" for i, (sign, v, bt) in enumerate(calc["parts"])
+            f"{'' if i == 0 and sign == '+' else sign + ' '}{v}{' %' if sign == '×' else ''} ({bt})"
+            for i, (sign, v, bt) in enumerate(calc["parts"])
         )
+    group = calc.get("group")
+    at = f"At the rate {group.get('BT-119', '')} % ({group.get('BT-118', '')}): " if group else ""
     return (
-        f"{terms} = {calc['expected']}; the invoice states {calc['stated']} ({calc['result']}), a gap of {calc['gap']}"
+        f"{at}{terms} = {calc['expected']}; the invoice states {calc['stated']} ({calc['result']}), "
+        f"a gap of {calc['gap']}"
     )
 
 

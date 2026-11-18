@@ -44,16 +44,26 @@ The image runs as an unprivileged user (UID 10001).
 
 ### The values behind an error
 
-For the totals rules (BR-CO-10, 13, 15 and 16), lintvoice shows the computation with the invoice's own values:
+For the totals and VAT rules (BR-CO-10 to 17, BR-S-08 and BR-S-09), lintvoice shows the computation with the
+invoice's own values:
 
 ```
   error   BR-CO-15  ×1
     1025.00 (BT-109) + 205.00 (BT-110) = 1230.00; the invoice states 1231.00 (BT-112), a gap of 1.00
 ```
 
+A rule checked for each VAT rate shows the rate that fails:
+
+```
+  error   BR-CO-17  ×1
+    At the rate 20 % (S): 1025.00 (BT-116) × 20 % (BT-119) = 205.00; the invoice states 207.00
+    (BT-117), a gap of 2.00
+```
+
 In JSON, each file carries `values`: the business terms read from the invoice (`terms`, with the identifier
-`schemes` given), its `lines` and its `notes`. A failing totals rule carries `computation`: its `parts`, the
-`expected` and `stated` amounts, and the `gap`. Where each business term is read, in CII and UBL, is data:
+`schemes` given), its `lines`, its `notes`, its `vat_breakdown` and its document level `allowances` and `charges`. A
+failing totals or VAT rule carries `computation`: its `parts`, the `expected` and `stated` amounts, the `gap` and, for
+a rule checked for each VAT rate, the VAT breakdown that fails (`group`). Where each business term is read, in CII and UBL, is data:
 [`src/lintvoice/terms.json`](src/lintvoice/terms.json).
 
 ### One rule

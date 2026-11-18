@@ -1,5 +1,5 @@
 {
- "about": "Where to read each business term (BT) of EN 16931 in a CII or UBL invoice, and the computations of the totals rules. A path is a list of element local names from the root, '|' for alternatives, '[@attr=value]' to filter on an attribute; the first match counts. Read by lintvoice and by the lintvoice.com check page, so both show the same values.",
+ "about": "Where to read each business term (BT) of EN 16931 in a CII or UBL invoice, and the computations of the totals and VAT rules. A path is a list of element local names from the root (from the group's element for a group's terms), '|' for alternatives, '[@attr=value]' to filter on an attribute; the first match counts. A computation adds or subtracts its parts in order, and '×' multiplies by a rate in percent; with 'each', it runs once per group item (a VAT breakdown) kept by 'where', reads its unscoped parts and its result from that item, and keeps only the items of a scoped part whose terms match the item's ('match'); 'round' gives the decimals of the expected amount, rounded half away from zero. Read by lintvoice and by the lintvoice.com check page, so both show the same values.",
  "header": {
   "BT-1": {
    "CII": "ExchangedDocument/ID",
@@ -158,6 +158,70 @@
   "BT-131": {
    "CII": "SpecifiedLineTradeSettlement/SpecifiedTradeSettlementLineMonetarySummation/LineTotalAmount",
    "UBL": "LineExtensionAmount"
+  },
+  "BT-151": {
+   "CII": "SpecifiedLineTradeSettlement/ApplicableTradeTax/CategoryCode",
+   "UBL": "Item/ClassifiedTaxCategory/ID"
+  }
+ },
+ "vat_breakdown": {
+  "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/ApplicableTradeTax",
+  "UBL": "TaxTotal/TaxSubtotal"
+ },
+ "vat_breakdown_terms": {
+  "BT-116": {
+   "CII": "BasisAmount",
+   "UBL": "TaxableAmount"
+  },
+  "BT-117": {
+   "CII": "CalculatedAmount",
+   "UBL": "TaxAmount"
+  },
+  "BT-118": {
+   "CII": "CategoryCode",
+   "UBL": "TaxCategory/ID"
+  },
+  "BT-119": {
+   "CII": "RateApplicablePercent",
+   "UBL": "TaxCategory/Percent"
+  }
+ },
+ "allowances_charges": {
+  "CII": {
+   "path": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/SpecifiedTradeAllowanceCharge",
+   "charge": "ChargeIndicator/Indicator"
+  },
+  "UBL": {
+   "path": "AllowanceCharge",
+   "charge": "ChargeIndicator"
+  }
+ },
+ "allowance_terms": {
+  "BT-92": {
+   "CII": "ActualAmount",
+   "UBL": "Amount"
+  },
+  "BT-95": {
+   "CII": "CategoryTradeTax/CategoryCode",
+   "UBL": "TaxCategory/ID"
+  },
+  "BT-96": {
+   "CII": "CategoryTradeTax/RateApplicablePercent",
+   "UBL": "TaxCategory/Percent"
+  }
+ },
+ "charge_terms": {
+  "BT-99": {
+   "CII": "ActualAmount",
+   "UBL": "Amount"
+  },
+  "BT-102": {
+   "CII": "CategoryTradeTax/CategoryCode",
+   "UBL": "TaxCategory/ID"
+  },
+  "BT-103": {
+   "CII": "CategoryTradeTax/RateApplicablePercent",
+   "UBL": "TaxCategory/Percent"
   }
  },
  "notes": {
@@ -182,6 +246,26 @@
     ]
    ]
   },
+  "BR-CO-11": {
+   "result": "BT-107",
+   "parts": [
+    [
+     "+",
+     "BT-92",
+     "each allowance"
+    ]
+   ]
+  },
+  "BR-CO-12": {
+   "result": "BT-108",
+   "parts": [
+    [
+     "+",
+     "BT-99",
+     "each charge"
+    ]
+   ]
+  },
   "BR-CO-13": {
    "result": "BT-109",
    "parts": [
@@ -196,6 +280,16 @@
     [
      "+",
      "BT-108"
+    ]
+   ]
+  },
+  "BR-CO-14": {
+   "result": "BT-110",
+   "parts": [
+    [
+     "+",
+     "BT-117",
+     "each VAT breakdown"
     ]
    ]
   },
@@ -228,6 +322,75 @@
      "BT-114"
     ]
    ]
+  },
+  "BR-CO-17": {
+   "result": "BT-117",
+   "each": "vat_breakdown",
+   "parts": [
+    [
+     "+",
+     "BT-116"
+    ],
+    [
+     "×",
+     "BT-119"
+    ]
+   ],
+   "round": 2
+  },
+  "BR-S-08": {
+   "result": "BT-116",
+   "each": "vat_breakdown",
+   "where": {
+    "BT-118": "S"
+   },
+   "parts": [
+    [
+     "+",
+     "BT-131",
+     "each line",
+     {
+      "BT-151": "BT-118",
+      "BT-152": "BT-119"
+     }
+    ],
+    [
+     "+",
+     "BT-99",
+     "each charge",
+     {
+      "BT-102": "BT-118",
+      "BT-103": "BT-119"
+     }
+    ],
+    [
+     "-",
+     "BT-92",
+     "each allowance",
+     {
+      "BT-95": "BT-118",
+      "BT-96": "BT-119"
+     }
+    ]
+   ]
+  },
+  "BR-S-09": {
+   "result": "BT-117",
+   "each": "vat_breakdown",
+   "where": {
+    "BT-118": "S"
+   },
+   "parts": [
+    [
+     "+",
+     "BT-116"
+    ],
+    [
+     "×",
+     "BT-119"
+    ]
+   ],
+   "round": 2
   }
  }
 }
