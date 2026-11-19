@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/lintvoice/lintvoice",
+  "public_key": "pk_etmoIrTyBlY9jlr5FyBt3",
   "projectTitle": "lintvoice",
   "description": "Command line tool that checks e-invoices (CII and UBL XML, Factur-X and ZUGFeRD PDF) offline against the official rule files: the European standard EN 16931, then each country's own rules, starting with the French reform's BR-FR. It explains each failing rule with the invoice's own values.",
   "excludeFolders": ["tests", "third_party", "skills"],

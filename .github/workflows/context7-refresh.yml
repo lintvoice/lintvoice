@@ -1,7 +1,9 @@
 name: context7
 # After each push to main, asks Context7 to read this repository's docs again, so that coding agents that get
-# documentation through Context7 receive the current version. Needs a CONTEXT7_API_KEY repository secret (from the
-# Context7 dashboard); without it, the step is skipped.
+# documentation through Context7 receive the current version. Needs a CONTEXT7_API_KEY secret, for the repository
+# or its organization (from the Context7 dashboard); without it, the step is skipped. Context7 waits a while between
+# two refreshes of a library and answers "too-early" meanwhile: that push is let through; any other answer than
+# success fails the run.
 on:
   push:
     branches: [main]
@@ -17,7 +19,15 @@ jobs:
       - name: Refresh the docs on Context7
         if: env.CONTEXT7_API_KEY != ''
         run: |
-          curl --fail-with-body -sS -X POST https://context7.com/api/v1/refresh \
+          status=$(curl -sS -o "$RUNNER_TEMP/answer.json" -w '%{http_code}' \
+            -X POST https://context7.com/api/v1/refresh \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $CONTEXT7_API_KEY" \
-            -d "{\"libraryName\": \"/$GITHUB_REPOSITORY\"}"
+            -d "{\"libraryName\": \"/$GITHUB_REPOSITORY\"}")
+          cat "$RUNNER_TEMP/answer.json"; echo
+          if [ "$status" = 200 ]; then exit 0; fi
+          if grep -q '"too-early"' "$RUNNER_TEMP/answer.json"; then
+            echo "::notice::Context7 refreshed these docs recently; the next push after its waiting period will."
+            exit 0
+          fi
+          exit 1
