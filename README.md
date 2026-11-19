@@ -10,7 +10,7 @@ It starts with the European standard, then adds each country's own rules. It wor
 
 lintvoice reads CII XML, UBL XML (invoices and credit notes) and Factur-X / ZUGFeRD PDFs. Results are grouped by rule (e.g. one missing VAT number shows up once, not for every faulty invoice line).
 
-> Status: 0.2.0. Options and the JSON output may still change before 1.0.
+> Before 1.0, options and the JSON output may still change.
 
 ## Quick start
 
@@ -89,6 +89,16 @@ not hold what it checks. In JSON, each file carries `rules`: for each rule asked
 `no-error`, `does-not-apply`, `not-checked`) and, when it does not apply, the `reason` (`seller-not-in-france`,
 `other-syntax`, `other-profile`, `not-in-invoice`).
 
+## From a coding agent
+
+A skill ([Agent Skills](https://agentskills.io) format) tells a coding agent when to run lintvoice, how to read
+the result and where each rule is explained.
+
+- Claude Code: `claude plugin marketplace add lintvoice/lintvoice`, then `claude plugin install lintvoice@lintvoice`.
+  To receive updates, turn on auto-update for the marketplace in `/plugin`, under Marketplaces.
+- Other agents (Codex, Cursor, GitHub Copilot, Gemini CLI…): `npx skills add lintvoice/lintvoice`; `npx skills update`
+  brings the latest version.
+
 ## Rule packs: what lintvoice downloads, and why
 
 lintvoice ships no rule files. `lintvoice rules install` downloads each pack once, from its upstream source, at a pinned version:
@@ -130,7 +140,7 @@ Packs go to `~/.cache/lintvoice/rules` (or `$XDG_CACHE_HOME`, `$LINTVOICE_RULES_
 | --- | --- |
 | 0 | No errors (warnings do not change the exit code) |
 | 1 | At least one file has errors |
-| 2 | A file could not be read as an invoice, or no file was found |
+| 2 | A file could not be read as an invoice, no file was found, or a rule asked with `--rule` is not in the official rule files |
 | 3 | Rule packs are not installed |
 | 4 | No errors found, but a rule set could not run on a file: its official rule file stopped with an error. The check is incomplete, so lintvoice does not say "no errors" |
 

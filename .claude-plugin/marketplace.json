@@ -1,0 +1,14 @@
+{
+  "name": "lintvoice",
+  "description": "lintvoice's skill for coding agents: check e-invoices against the official rules and explain each failing rule.",
+  "owner": {
+    "name": "lintvoice",
+    "url": "https://lintvoice.com"
+  },
+  "plugins": [
+    {
+      "name": "lintvoice",
+      "source": "./"
+    }
+  ]
+}

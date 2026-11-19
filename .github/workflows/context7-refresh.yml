@@ -1,0 +1,23 @@
+name: context7
+# After each push to main, asks Context7 to read this repository's docs again, so that coding agents that get
+# documentation through Context7 receive the current version. Needs a CONTEXT7_API_KEY repository secret (from the
+# Context7 dashboard); without it, the step is skipped.
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
+    steps:
+      - name: Refresh the docs on Context7
+        if: env.CONTEXT7_API_KEY != ''
+        run: |
+          curl --fail-with-body -sS -X POST https://context7.com/api/v1/refresh \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $CONTEXT7_API_KEY" \
+            -d "{\"libraryName\": \"/$GITHUB_REPOSITORY\"}"

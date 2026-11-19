@@ -1,0 +1,12 @@
+{
+  "name": "lintvoice",
+  "description": "Lets a coding agent check e-invoices against the official rules with the lintvoice command line tool, offline, and explain each failing rule.",
+  "author": {
+    "name": "lintvoice",
+    "url": "https://lintvoice.com"
+  },
+  "homepage": "https://lintvoice.com",
+  "repository": "https://github.com/lintvoice/lintvoice",
+  "license": "MIT",
+  "keywords": ["e-invoice", "validator", "factur-x", "zugferd", "xrechnung", "peppol", "en16931", "cii", "ubl"]
+}

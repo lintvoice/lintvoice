@@ -1,0 +1,15 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "lintvoice",
+  "description": "Command line tool that checks e-invoices (CII and UBL XML, Factur-X and ZUGFeRD PDF) offline against the official rule files: the European standard EN 16931, then each country's own rules, starting with the French reform's BR-FR. It explains each failing rule with the invoice's own values.",
+  "excludeFolders": ["tests", "third_party", "skills"],
+  "excludeFiles": ["THIRD_PARTY_NOTICES.md"],
+  "rules": [
+    "Install the official rule packs once with `lintvoice rules install`; checks then run offline.",
+    "Use `--format json` to read results in code: each file lists its failing rules, and a failing totals or VAT rule carries its computation.",
+    "Use `--rule <ID>` to ask about one rule: the answer is fails, warns, no-error, does-not-apply (with the reason) or not-checked.",
+    "Exit code 4 means a rule set could not run on a file: the check is incomplete and must not be reported as passing.",
+    "No errors means the invoice passes the rules lintvoice ran, not that a platform will accept it.",
+    "Each explained rule has a page at https://lintvoice.com/rules/<ID>/ saying what it checks and how to fix it."
+  ]
+}

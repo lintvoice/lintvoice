@@ -21,7 +21,7 @@ jobs:
       - run: uvx ruff@0.17.2 format --check .
       - run: uvx zizmor@1.31.1 --offline .github/workflows/
       - name: Wording (Vale) - we help check, we never certify
-        run: docker run --rm -v "$PWD:/docs" -w /docs jdkato/vale@sha256:f5a09410093936d4919d868120786da9789e2652ac321c66a895403eca020ae4 README.md README.fr.md THIRD_PARTY_NOTICES.md  # v3.24.0
+        run: docker run --rm -v "$PWD:/docs" -w /docs jdkato/vale@sha256:f5a09410093936d4919d868120786da9789e2652ac321c66a895403eca020ae4 README.md README.fr.md THIRD_PARTY_NOTICES.md skills/lintvoice/SKILL.md  # v3.24.0
       - name: Known vulnerabilities in the locked dependencies
         run: |
           uv export --frozen --no-emit-project --no-hashes --all-groups -o "$RUNNER_TEMP/locked.txt"
