@@ -1,5 +1,5 @@
 {
- "about": "Where to read each business term (BT) of EN 16931 in a CII or UBL invoice, and the computations of the totals and VAT rules. A path is a list of element local names from the root (from the group's element for a group's terms), '|' for alternatives, '[@attr=value]' to filter on an attribute; the first match counts. A computation adds or subtracts its parts in order, and '×' multiplies by a rate in percent; with 'each', it runs once per group item (a VAT breakdown) kept by 'where', reads its unscoped parts and its result from that item, and keeps only the items of a scoped part whose terms match the item's ('match'); 'round' gives the decimals of the expected amount, rounded half away from zero. Read by lintvoice and by the lintvoice.com check page, so both show the same values.",
+ "about": "Where to read each business term (BT) of EN 16931 in a CII or UBL invoice, and the computations of the totals and VAT rules. A path is a list of element local names from the root (from the group's element for a group's terms), '|' for alternatives, '[@attr=value]' to filter on an attribute, and a last step '@name' reads that attribute; the first match counts. A term may have a list of paths: the first path that finds something counts. A term with no path for a syntax is not read in that syntax: BT-32 in UBL, which EN 16931 tells from the VAT number (BT-31) by its tax scheme. BT-111 is not read: EN 16931 tells it from BT-110 by its currency (BT-6), which a path does not express. Each line also carries its allowances, charges and item attributes; 'documents' are the additional supporting documents (BG-24), 'type' their type code (130: an invoiced object identifier, BT-18). A computation adds or subtracts its parts in order, and '×' multiplies by a rate in percent; with 'each', it runs once per group item (a VAT breakdown) kept by 'where', reads its unscoped parts and its result from that item, and keeps only the items of a scoped part whose terms match the item's ('match'); 'round' gives the decimals of the expected amount, rounded half away from zero. Read by lintvoice and by the lintvoice.com check page, so both show the same values.",
  "header": {
   "BT-1": {
    "CII": "ExchangedDocument/ID",
@@ -17,17 +17,33 @@
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/InvoiceCurrencyCode",
    "UBL": "DocumentCurrencyCode"
   },
+  "BT-6": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/TaxCurrencyCode",
+   "UBL": "TaxCurrencyCode"
+  },
   "BT-7": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/ApplicableTradeTax/TaxPointDate/DateString",
    "UBL": "TaxPointDate"
+  },
+  "BT-8": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/ApplicableTradeTax/DueDateTypeCode",
+   "UBL": "InvoicePeriod/DescriptionCode"
   },
   "BT-9": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/SpecifiedTradePaymentTerms/DueDateDateTime/DateTimeString",
    "UBL": "DueDate"
   },
+  "BT-12": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/ContractReferencedDocument/IssuerAssignedID",
+   "UBL": "ContractDocumentReference/ID"
+  },
   "BT-13": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/BuyerOrderReferencedDocument/IssuerAssignedID",
    "UBL": "OrderReference/ID"
+  },
+  "BT-20": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/SpecifiedTradePaymentTerms/Description",
+   "UBL": "PaymentTerms/Note"
   },
   "BT-23": {
    "CII": "ExchangedDocumentContext/BusinessProcessSpecifiedDocumentContextParameter/ID",
@@ -46,7 +62,11 @@
    "UBL": "AccountingSupplierParty/Party/PartyLegalEntity/RegistrationName"
   },
   "BT-29": {
-   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/GlobalID[@schemeID=0009]",
+   "CII": [
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/GlobalID[@schemeID=0009]",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/GlobalID",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/ID"
+   ],
    "UBL": "AccountingSupplierParty/Party/PartyIdentification/ID"
   },
   "BT-30": {
@@ -56,6 +76,9 @@
   "BT-31": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/SpecifiedTaxRegistration/ID[@schemeID=VA]",
    "UBL": "AccountingSupplierParty/Party/PartyTaxScheme/CompanyID"
+  },
+  "BT-32": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/SpecifiedTaxRegistration/ID[@schemeID=FC]"
   },
   "BT-34": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTradeParty/URIUniversalCommunication/URIID",
@@ -70,7 +93,11 @@
    "UBL": "AccountingCustomerParty/Party/PartyLegalEntity/RegistrationName"
   },
   "BT-46": {
-   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/BuyerTradeParty/GlobalID[@schemeID=0009]",
+   "CII": [
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/BuyerTradeParty/GlobalID[@schemeID=0009]",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/BuyerTradeParty/GlobalID",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/BuyerTradeParty/ID"
+   ],
    "UBL": "AccountingCustomerParty/Party/PartyIdentification/ID"
   },
   "BT-47": {
@@ -88,6 +115,50 @@
   "BT-55": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/BuyerTradeParty/PostalTradeAddress/CountryID",
    "UBL": "AccountingCustomerParty/Party/PostalAddress/Country/IdentificationCode"
+  },
+  "BT-59": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/PayeeTradeParty/Name",
+   "UBL": "PayeeParty/PartyName/Name"
+  },
+  "BT-60": {
+   "CII": [
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/PayeeTradeParty/GlobalID[@schemeID=0009]",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/PayeeTradeParty/GlobalID",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/PayeeTradeParty/ID"
+   ],
+   "UBL": "PayeeParty/PartyIdentification/ID"
+  },
+  "BT-61": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/PayeeTradeParty/SpecifiedLegalOrganization/ID",
+   "UBL": "PayeeParty/PartyLegalEntity/CompanyID"
+  },
+  "BT-63": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/SellerTaxRepresentativeTradeParty/SpecifiedTaxRegistration/ID[@schemeID=VA]",
+   "UBL": "TaxRepresentativeParty/PartyTaxScheme/CompanyID"
+  },
+  "BT-70": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/ShipToTradeParty/Name",
+   "UBL": "Delivery/DeliveryParty/PartyName/Name"
+  },
+  "BT-71": {
+   "CII": [
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/ShipToTradeParty/GlobalID[@schemeID=0009]",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/ShipToTradeParty/GlobalID",
+    "SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/ShipToTradeParty/ID"
+   ],
+   "UBL": "Delivery/DeliveryLocation/ID"
+  },
+  "BT-72": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/ActualDeliverySupplyChainEvent/OccurrenceDateTime/DateTimeString",
+   "UBL": "Delivery/ActualDeliveryDate"
+  },
+  "BT-73": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/BillingSpecifiedPeriod/StartDateTime/DateTimeString",
+   "UBL": "InvoicePeriod/StartDate"
+  },
+  "BT-74": {
+   "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/BillingSpecifiedPeriod/EndDateTime/DateTimeString",
+   "UBL": "InvoicePeriod/EndDate"
   },
   "BT-106": {
    "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeSettlement/SpecifiedTradeSettlementHeaderMonetarySummation/LineTotalAmount",
@@ -162,6 +233,30 @@
   "BT-151": {
    "CII": "SpecifiedLineTradeSettlement/ApplicableTradeTax/CategoryCode",
    "UBL": "Item/ClassifiedTaxCategory/ID"
+  },
+  "BT-130": {
+   "CII": "SpecifiedLineTradeDelivery/BilledQuantity/@unitCode",
+   "UBL": "InvoicedQuantity|CreditedQuantity/@unitCode"
+  },
+  "BT-134": {
+   "CII": "SpecifiedLineTradeSettlement/BillingSpecifiedPeriod/StartDateTime/DateTimeString",
+   "UBL": "InvoicePeriod/StartDate"
+  },
+  "BT-135": {
+   "CII": "SpecifiedLineTradeSettlement/BillingSpecifiedPeriod/EndDateTime/DateTimeString",
+   "UBL": "InvoicePeriod/EndDate"
+  },
+  "BT-147": {
+   "CII": "SpecifiedLineTradeAgreement/GrossPriceProductTradePrice/AppliedTradeAllowanceCharge/ActualAmount",
+   "UBL": "Price/AllowanceCharge/Amount"
+  },
+  "BT-148": {
+   "CII": "SpecifiedLineTradeAgreement/GrossPriceProductTradePrice/ChargeAmount",
+   "UBL": "Price/AllowanceCharge/BaseAmount"
+  },
+  "BT-149": {
+   "CII": "SpecifiedLineTradeAgreement/NetPriceProductTradePrice/BasisQuantity",
+   "UBL": "Price/BaseQuantity"
   }
  },
  "vat_breakdown": {
@@ -184,6 +279,14 @@
   "BT-119": {
    "CII": "RateApplicablePercent",
    "UBL": "TaxCategory/Percent"
+  },
+  "BT-120": {
+   "CII": "ExemptionReason",
+   "UBL": "TaxCategory/TaxExemptionReason"
+  },
+  "BT-121": {
+   "CII": "ExemptionReasonCode",
+   "UBL": "TaxCategory/TaxExemptionReasonCode"
   }
  },
  "allowances_charges": {
@@ -201,6 +304,10 @@
    "CII": "ActualAmount",
    "UBL": "Amount"
   },
+  "BT-93": {
+   "CII": "BasisAmount",
+   "UBL": "BaseAmount"
+  },
   "BT-95": {
    "CII": "CategoryTradeTax/CategoryCode",
    "UBL": "TaxCategory/ID"
@@ -208,12 +315,24 @@
   "BT-96": {
    "CII": "CategoryTradeTax/RateApplicablePercent",
    "UBL": "TaxCategory/Percent"
+  },
+  "BT-97": {
+   "CII": "Reason",
+   "UBL": "AllowanceChargeReason"
+  },
+  "BT-98": {
+   "CII": "ReasonCode",
+   "UBL": "AllowanceChargeReasonCode"
   }
  },
  "charge_terms": {
   "BT-99": {
    "CII": "ActualAmount",
    "UBL": "Amount"
+  },
+  "BT-100": {
+   "CII": "BasisAmount",
+   "UBL": "BaseAmount"
   },
   "BT-102": {
    "CII": "CategoryTradeTax/CategoryCode",
@@ -222,6 +341,96 @@
   "BT-103": {
    "CII": "CategoryTradeTax/RateApplicablePercent",
    "UBL": "TaxCategory/Percent"
+  },
+  "BT-104": {
+   "CII": "Reason",
+   "UBL": "AllowanceChargeReason"
+  },
+  "BT-105": {
+   "CII": "ReasonCode",
+   "UBL": "AllowanceChargeReasonCode"
+  }
+ },
+ "line_allowances_charges": {
+  "CII": {
+   "path": "SpecifiedLineTradeSettlement/SpecifiedTradeAllowanceCharge",
+   "charge": "ChargeIndicator/Indicator"
+  },
+  "UBL": {
+   "path": "AllowanceCharge",
+   "charge": "ChargeIndicator"
+  }
+ },
+ "line_allowance_terms": {
+  "BT-136": {
+   "CII": "ActualAmount",
+   "UBL": "Amount"
+  },
+  "BT-137": {
+   "CII": "BasisAmount",
+   "UBL": "BaseAmount"
+  },
+  "BT-139": {
+   "CII": "Reason",
+   "UBL": "AllowanceChargeReason"
+  },
+  "BT-140": {
+   "CII": "ReasonCode",
+   "UBL": "AllowanceChargeReasonCode"
+  }
+ },
+ "line_charge_terms": {
+  "BT-141": {
+   "CII": "ActualAmount",
+   "UBL": "Amount"
+  },
+  "BT-142": {
+   "CII": "BasisAmount",
+   "UBL": "BaseAmount"
+  },
+  "BT-144": {
+   "CII": "Reason",
+   "UBL": "AllowanceChargeReason"
+  },
+  "BT-145": {
+   "CII": "ReasonCode",
+   "UBL": "AllowanceChargeReasonCode"
+  }
+ },
+ "line_attributes": {
+  "CII": "SpecifiedTradeProduct/ApplicableProductCharacteristic",
+  "UBL": "Item/AdditionalItemProperty"
+ },
+ "line_attribute_terms": {
+  "BT-160": {
+   "CII": "Description",
+   "UBL": "Name"
+  },
+  "BT-161": {
+   "CII": "Value",
+   "UBL": "Value"
+  }
+ },
+ "documents": {
+  "CII": "SupplyChainTradeTransaction/ApplicableHeaderTradeAgreement/AdditionalReferencedDocument",
+  "UBL": "AdditionalDocumentReference"
+ },
+ "document_terms": {
+  "BT-122": {
+   "CII": "IssuerAssignedID",
+   "UBL": "ID"
+  },
+  "BT-123": {
+   "CII": "Name",
+   "UBL": "DocumentDescription"
+  },
+  "type": {
+   "CII": "TypeCode",
+   "UBL": "DocumentTypeCode"
+  },
+  "BT-18-1": {
+   "CII": "ReferenceTypeCode",
+   "UBL": "ID/@schemeID"
   }
  },
  "notes": {

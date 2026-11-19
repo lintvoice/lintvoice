@@ -16,7 +16,7 @@ What it runs today is never written here, so that this file stays true as rules 
 
 - `uvx lintvoice rules list` shows the rule sets installed, with their versions and sources;
 - every report starts with the rule sets it ran and their versions, for example
-  `lintvoice 0.4.0 · EN 16931 1.3.17 (CII), BR-FR 1.4.0.04 (CII)`;
+  `lintvoice 0.5.0 · EN 16931 1.3.17 (CII), BR-FR 1.4.0.04 (CII)`;
 - the README says which file gets which rules, and what is not checked yet:
   https://github.com/lintvoice/lintvoice#readme
 

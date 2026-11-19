@@ -19,9 +19,12 @@ NUMBER = re.compile(r"^-?\d+(\.\d+)?$")
 
 
 def _find(node, path):
-    """The elements at the end of a path of local names ('|' for alternatives, '[@attr=value]' as a filter)."""
+    """The elements at the end of a path of local names ('|' for alternatives, '[@attr=value]' as a filter); a last
+    step '@name' gives that attribute's values instead."""
     nodes = [node]
     for step in path.split("/"):
+        if step.startswith("@"):
+            return [n.get(step[1:]) for n in nodes if n.get(step[1:]) is not None]
         names, _, condition = step.partition("[@")
         wanted = names.split("|")
         attr, _, value = condition.rstrip("]").partition("=")
@@ -36,33 +39,67 @@ def _find(node, path):
     return nodes
 
 
+def _first(node, paths):
+    """What the first path that finds something finds: a term's path, or its list of paths."""
+    for path in [paths] if isinstance(paths, str) else paths:
+        if found := _find(node, path):
+            return found
+    return []
+
+
 def _text(nodes):
-    return "".join(nodes[0].itertext()).strip() if nodes else ""
+    if not nodes:
+        return ""
+    return (nodes[0] if isinstance(nodes[0], str) else "".join(nodes[0].itertext())).strip()
 
 
 def _terms(node, spec, syntax):
-    return {bt: _text(_find(node, paths[syntax])) for bt, paths in spec.items()}
+    """A group item's terms; a term with no path for this syntax is not read."""
+    return {bt: _text(_first(node, paths[syntax])) for bt, paths in spec.items() if syntax in paths}
+
+
+def _split(node, spec, allowance_terms, charge_terms, syntax):
+    """The allowances and the charges under a node (the invoice, or a line), told apart by their charge indicator."""
+    allowances, charges = [], []
+    for item in _find(node, spec[syntax]["path"]):
+        if _text(_find(item, spec[syntax]["charge"])).lower() == "true":
+            charges.append(_terms(item, SPEC[charge_terms], syntax))
+        else:
+            allowances.append(_terms(item, SPEC[allowance_terms], syntax))
+    return allowances, charges
+
+
+def _line(line, syntax):
+    """A line's terms, with its allowances, charges and item attributes."""
+    allowances, charges = _split(
+        line, SPEC["line_allowances_charges"], "line_allowance_terms", "line_charge_terms", syntax
+    )
+    attributes = [_terms(a, SPEC["line_attribute_terms"], syntax) for a in _find(line, SPEC["line_attributes"][syntax])]
+    return {
+        **_terms(line, SPEC["line_terms"], syntax),
+        "allowances": allowances,
+        "charges": charges,
+        "attributes": attributes,
+    }
 
 
 def read(xml, syntax):
     """The invoice's values: header terms (an empty string when absent), the identifier schemes given, each line's
-    terms, the notes with their subject code, the VAT breakdown, and the document level allowances and charges."""
+    terms with its allowances, charges and item attributes, the notes with their subject code, the VAT breakdown, the
+    document level allowances and charges, and the additional supporting documents."""
     root = etree.fromstring(xml.lstrip(b"\xef\xbb\xbf"), PARSER)
     terms, schemes = {}, {}
     for bt, paths in SPEC["header"].items():
-        found = _find(root, paths[syntax])
+        if syntax not in paths:
+            continue
+        found = _first(root, paths[syntax])
         terms[bt] = _text(found)
-        if found and found[0].get("schemeID"):
+        if found and not isinstance(found[0], str) and found[0].get("schemeID"):
             schemes[bt] = found[0].get("schemeID")
-    lines = [_terms(line, SPEC["line_terms"], syntax) for line in _find(root, SPEC["lines"][syntax])]
+    lines = [_line(line, syntax) for line in _find(root, SPEC["lines"][syntax])]
     breakdown = [_terms(tax, SPEC["vat_breakdown_terms"], syntax) for tax in _find(root, SPEC["vat_breakdown"][syntax])]
-    allowances, charges = [], []
-    ac = SPEC["allowances_charges"][syntax]
-    for node in _find(root, ac["path"]):
-        if _text(_find(node, ac["charge"])).lower() == "true":
-            charges.append(_terms(node, SPEC["charge_terms"], syntax))
-        else:
-            allowances.append(_terms(node, SPEC["allowance_terms"], syntax))
+    allowances, charges = _split(root, SPEC["allowances_charges"], "allowance_terms", "charge_terms", syntax)
+    documents = [_terms(d, SPEC["document_terms"], syntax) for d in _find(root, SPEC["documents"][syntax])]
     notes_spec = SPEC["notes"][syntax]
     notes = []
     for note in _find(root, notes_spec["path"]):
@@ -83,6 +120,7 @@ def read(xml, syntax):
         "vat_breakdown": breakdown,
         "allowances": allowances,
         "charges": charges,
+        "documents": documents,
     }
 
 

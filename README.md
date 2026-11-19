@@ -67,7 +67,8 @@ A rule checked for each VAT rate shows the rate that fails:
 ```
 
 In JSON, each file carries `values`: the business terms read from the invoice (`terms`, with the identifier
-`schemes` given), its `lines`, its `notes`, its `vat_breakdown` and its document level `allowances` and `charges`. A
+`schemes` given), its `lines` (each with its own `allowances`, `charges` and item `attributes`), its `notes`, its
+`vat_breakdown`, its document level `allowances` and `charges`, and its supporting `documents`. A
 failing totals or VAT rule carries `computation`: its `parts`, the `expected` and `stated` amounts, the `gap` and, for
 a rule checked for each VAT rate, the VAT breakdown that fails (`group`). Where each business term is read, in CII and UBL, is data:
 [`src/lintvoice/terms.json`](src/lintvoice/terms.json).
