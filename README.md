@@ -1,8 +1,14 @@
-# lintvoice checks your e-invoices against official rules and standards
+<a href="https://lintvoice.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://lintvoice.com/static/logo/lintvoice-wordmark-dark.svg"><img src="https://lintvoice.com/static/logo/lintvoice-wordmark-light.svg" alt="lintvoice" width="160"></picture></a>
+
+# Check, understand and fix your e-invoices
 
 [Lire en français](README.fr.md)
 
-It starts with the European standard, then adds each country's own rules. It works **offline**: your invoices are never sent anywhere. Today it runs:
+lintvoice runs the official rules on your e-invoices: the European standard's, then each country's, starting with France. Catch invalid invoices in your CI, in one command, with no Java, no server and no account: your invoices are never sent anywhere.
+
+Each failing rule is named, with its official message and, for the totals and VAT, the computation with your invoice's own values. On [lintvoice.com](https://lintvoice.com/rules/), a rule's page says in plain words what it checks and how to fix an invoice that fails it.
+
+Today it runs:
 
 - **EN 16931** (the European e-invoicing standard), for CII and UBL;
 - **Factur-X 1.09.2** profile rules, for Factur-X PDFs;

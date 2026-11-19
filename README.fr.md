@@ -1,8 +1,14 @@
-# lintvoice vérifie vos factures électroniques au regard des règles et normes officielles
+<a href="https://lintvoice.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://lintvoice.com/static/logo/lintvoice-wordmark-dark.svg"><img src="https://lintvoice.com/static/logo/lintvoice-wordmark-light.svg" alt="lintvoice" width="160"></picture></a>
+
+# Vérifiez, comprenez et corrigez vos factures électroniques
 
 [Read in English](README.md)
 
-Il commence par la norme européenne, puis ajoute les règles propres à chaque pays. Il fonctionne **hors ligne** : vos factures ne sont envoyées nulle part. Aujourd'hui, il applique :
+lintvoice applique les règles officielles à vos factures électroniques : celles de la norme européenne, puis celles de chaque pays, à commencer par la France. Repérez les factures invalides dans votre CI, en une commande, sans Java, sans serveur et sans compte : vos factures ne sont envoyées nulle part.
+
+Chaque règle en échec est nommée, avec son message officiel et, pour les totaux et la TVA, le calcul fait avec les valeurs de votre facture. Sur [lintvoice.com](https://lintvoice.com/fr/regles/), la page d'une règle dit en mots simples ce qu'elle vérifie et comment corriger une facture qui y échoue.
+
+Aujourd'hui, il applique :
 
 - **EN 16931**, la norme européenne, pour CII et UBL ;
 - les règles de profil **Factur-X 1.09.2**, pour les PDF Factur-X ;
