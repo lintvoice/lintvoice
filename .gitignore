@@ -4,3 +4,5 @@ __pycache__/
 dist/
 # Rule packs downloaded for the test suite (see tests/conftest.py)
 .rules-cache/
+# Hypothesis keeps its examples and caches here (tests/test_properties.py)
+.hypothesis/

@@ -134,8 +134,10 @@ def _decimal(value):
 
 
 def number(value, places):
-    """A decimal written with at least two places, more when the invoice's amounts carry more: '1230.00'."""
-    return f"{value:.{max(2, places)}f}"
+    """A decimal written with at least two places, more when the invoice's amounts carry more: '1230.00'. A value
+    that rounds to zero is written without a sign ('0.00', never '-0.00'), as the check page writes it."""
+    text = f"{value:.{max(2, places)}f}"
+    return text[1:] if text.startswith("-") and Decimal(text) == 0 else text
 
 
 SCOPES = {
@@ -195,10 +197,21 @@ def _compute(spec, values, item=None):
     return calc
 
 
+def _deviation(calc, spec):
+    """How far an item's stated amount is from its expected amount, as its rule measures it: without the signs when
+    the rule compares absolute values ('absolute': BR-CO-17 and BR-S-09 accept a VAT amount whose sign differs from
+    its base's, so a breakdown with only its sign flipped passes them)."""
+    stated, expected = Decimal(calc["stated"]), Decimal(calc["expected"])
+    if spec.get("absolute"):
+        stated, expected = abs(stated), abs(expected)
+    return abs(stated - expected)
+
+
 def computation(rule, values):
     """The computation a totals or VAT rule makes, with the invoice's values: parts [sign, value, BT], expected,
-    stated, and the gap (stated - expected); for a rule checked per VAT breakdown, the breakdown with the largest
-    gap (the one that fails), as `group`. None when the rule has no computation or a value is not a number."""
+    stated, and the gap (stated - expected); for a rule checked per VAT breakdown, the breakdown furthest from its
+    expected amount as the rule measures it (the one the rule rejects), as `group`. None when the rule has no
+    computation or a value is not a number."""
     spec = SPEC["computations"].get(rule)
     if not spec:
         return None
@@ -210,4 +223,4 @@ def computation(rule, values):
         if all(_same(item.get(bt), v) for bt, v in spec.get("where", {}).items())
     ]
     calcs = [c for c in (_compute(spec, values, item) for item in items) if c]
-    return max(calcs, key=lambda c: abs(Decimal(c["gap"])), default=None)
+    return max(calcs, key=lambda c: _deviation(c, spec), default=None)

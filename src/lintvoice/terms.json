@@ -1,5 +1,5 @@
 {
- "about": "Where to read each business term (BT) of EN 16931 in a CII or UBL invoice, and the computations of the totals and VAT rules. A path is a list of element local names from the root (from the group's element for a group's terms), '|' for alternatives, '[@attr=value]' to filter on an attribute, and a last step '@name' reads that attribute; the first match counts. A term may have a list of paths: the first path that finds something counts. A term with no path for a syntax is not read in that syntax: BT-32 in UBL, which EN 16931 tells from the VAT number (BT-31) by its tax scheme. BT-111 is not read: EN 16931 tells it from BT-110 by its currency (BT-6), which a path does not express. Each line also carries its allowances, charges and item attributes; 'documents' are the additional supporting documents (BG-24), 'type' their type code (130: an invoiced object identifier, BT-18). A computation adds or subtracts its parts in order, and '×' multiplies by a rate in percent; with 'each', it runs once per group item (a VAT breakdown) kept by 'where', reads its unscoped parts and its result from that item, and keeps only the items of a scoped part whose terms match the item's ('match'); 'round' gives the decimals of the expected amount, rounded half away from zero. Read by lintvoice and by the lintvoice.com check page, so both show the same values.",
+ "about": "Where to read each business term (BT) of EN 16931 in a CII or UBL invoice, and the computations of the totals and VAT rules. A path is a list of element local names from the root (from the group's element for a group's terms), '|' for alternatives, '[@attr=value]' to filter on an attribute, and a last step '@name' reads that attribute; the first match counts. A term may have a list of paths: the first path that finds something counts. A term with no path for a syntax is not read in that syntax: BT-32 in UBL, which EN 16931 tells from the VAT number (BT-31) by its tax scheme. BT-111 is not read: EN 16931 tells it from BT-110 by its currency (BT-6), which a path does not express. Each line also carries its allowances, charges and item attributes; 'documents' are the additional supporting documents (BG-24), 'type' their type code (130: an invoiced object identifier, BT-18). A computation adds or subtracts its parts in order, and '×' multiplies by a rate in percent; with 'each', it runs once per group item (a VAT breakdown) kept by 'where', reads its unscoped parts and its result from that item, and keeps only the items of a scoped part whose terms match the item's ('match'); 'round' gives the decimals of the expected amount, rounded half away from zero. With 'each', the item shown is the one furthest from its expected amount, the one the rule rejects; 'absolute' when the rule compares the amounts without their sign, as BR-CO-17 and BR-S-09 do (they accept a VAT amount whose sign differs from its base's). Read by lintvoice and by the lintvoice.com check page, so both show the same values.",
  "header": {
   "BT-1": {
    "CII": "ExchangedDocument/ID",
@@ -545,7 +545,8 @@
      "BT-119"
     ]
    ],
-   "round": 2
+   "round": 2,
+   "absolute": true
   },
   "BR-S-08": {
    "result": "BT-116",
@@ -599,7 +600,8 @@
      "BT-119"
     ]
    ],
-   "round": 2
+   "round": 2,
+   "absolute": true
   }
  }
 }
