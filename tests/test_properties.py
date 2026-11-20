@@ -114,4 +114,4 @@ def test_an_amount_that_rounds_to_zero_has_no_sign(base, rate):
     calc = explain.computation("BR-CO-17", values)
     for key in ("expected", "gap"):
         if Decimal(calc[key]) == 0:
-            assert not calc[key].startswith("-"), (key, calc)
+            assert calc[key] == "0.00", (key, calc)  # the amounts here carry two decimals
