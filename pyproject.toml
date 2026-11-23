@@ -1,6 +1,6 @@
 [project]
 name = "lintvoice"
-version = "0.6.0"
+version = "0.6.1"
 description = "Offline e-invoice validator that explains each failing rule: EN 16931, Factur-X / ZUGFeRD and the French BR-FR rules"
 readme = "README.md"
 license = "MIT"
