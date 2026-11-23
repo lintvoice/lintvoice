@@ -210,10 +210,12 @@ def test_a_last_step_reads_an_attribute(failing):
 
 def test_cii_documents_are_read(failing):
     assert failing("BR-FR-29")["documents"] == [
-        {"BT-122": "OBJ-1", "BT-123": "", "type": "130", "BT-18-1": "AFL"},
-        {"BT-122": "OBJ-2", "BT-123": "", "type": "130", "BT-18-1": "AFL"},
+        {"BT-122": "OBJ-1", "BT-123": "", "type": "130", "BT-18-1": "AFL", "BT-125": "", "BT-125-1": ""},
+        {"BT-122": "OBJ-2", "BT-123": "", "type": "130", "BT-18-1": "AFL", "BT-125": "", "BT-125-1": ""},
     ]
-    assert failing("BR-FR-17")["documents"] == [{"BT-122": "PJ-1", "BT-123": "CONTRAT", "type": "916", "BT-18-1": ""}]
+    assert failing("BR-FR-17")["documents"] == [
+        {"BT-122": "PJ-1", "BT-123": "CONTRAT", "type": "916", "BT-18-1": "", "BT-125": "", "BT-125-1": ""}
+    ]
 
 
 def test_cii_line_allowances_charges_price_and_attributes_are_read(failing):
@@ -287,6 +289,25 @@ def test_a_line_invoiced_object_identifier_is_read():
     assert lines[0]["BT-128"] == "ABO-42" and lines[1]["BT-128"] == ""
 
 
+def test_a_payment_card_number_is_read():
+    """BT-87: no CEN example pays by card, so a card is added, in CII to the payment means, in UBL to a CEN example's."""
+
+    def card(root):
+        means = root.find(".//ram:SpecifiedTradeSettlementPaymentMeans", invoices.NS)
+        node = etree.Element(f"{{{invoices.NS['ram']}}}ApplicableTradeSettlementFinancialCard")
+        etree.SubElement(node, f"{{{invoices.NS['ram']}}}ID").text = "1234"
+        means.find("ram:TypeCode", invoices.NS).addnext(node)
+
+    assert explain.read(invoices.xml(edit=card), "CII")["terms"]["BT-87"] == "1234"
+    if UBL_EXAMPLE is not None:
+        root = etree.fromstring(UBL_EXAMPLE.read_bytes())
+        cac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+        cbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+        account = etree.SubElement(root.find(f"{{{cac}}}PaymentMeans"), f"{{{cac}}}CardAccount")
+        etree.SubElement(account, f"{{{cbc}}}PrimaryAccountNumberID").text = "1234"
+        assert explain.read(etree.tostring(root), "UBL")["terms"]["BT-87"] == "1234"
+
+
 def test_bt_32_is_not_read_in_ubl():
     """BT-32 in UBL is told from the VAT number (BT-31) by its tax scheme, which a path does not express."""
     assert "BT-32" in explain.read(invoices.xml(), "CII")["terms"]
@@ -296,15 +317,16 @@ def test_bt_32_is_not_read_in_ubl():
 
 NEW_PLACES = {
     "terms": ["BT-6", "BT-8", "BT-12", "BT-20", "BT-59", "BT-60", "BT-61", "BT-63", "BT-70", "BT-71", "BT-72"],
-    "terms ": ["BT-73", "BT-74"],
-    "lines": ["BT-130", "BT-134", "BT-135", "BT-147", "BT-148", "BT-149"],
+    "terms ": ["BT-73", "BT-74", "BT-24", "BT-62", "BT-69", "BT-80", "BT-81", "BT-84"],
+    "lines": ["BT-130", "BT-134", "BT-135", "BT-147", "BT-148", "BT-149", "BT-126", "BT-157", "BT-157-1"],
+    "lines ": ["BT-158", "BT-158-1", "BT-159"],
     "line allowances": ["BT-136", "BT-137", "BT-139", "BT-140"],
     "line charges": ["BT-141", "BT-142", "BT-144", "BT-145"],
     "line attributes": ["BT-160", "BT-161"],
     "vat_breakdown": ["BT-120", "BT-121"],
     "allowances": ["BT-93", "BT-97", "BT-98"],
     "charges": ["BT-100", "BT-104", "BT-105"],
-    "documents": ["BT-122", "BT-123", "type", "BT-18-1"],
+    "documents": ["BT-122", "BT-123", "type", "BT-18-1", "BT-125", "BT-125-1"],
 }
 
 
@@ -312,7 +334,7 @@ def _found(values):
     """Each (place, term) with a value somewhere in the invoice."""
     rows = [("terms", values["terms"]), ("terms ", values["terms"])]
     for line in values["lines"]:
-        rows += [("lines", line)] + [
+        rows += [("lines", line), ("lines ", line)] + [
             (f"line {g}", item) for g in ("allowances", "charges", "attributes") for item in line[g]
         ]
     rows += [(g, item) for g in ("vat_breakdown", "allowances", "charges", "documents") for item in values[g]]
