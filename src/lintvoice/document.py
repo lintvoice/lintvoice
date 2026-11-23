@@ -121,6 +121,14 @@ DOCTYPE_REFUSED = (
 )
 
 
+def attached_xml(path):
+    """The invoice XML attached to a Factur-X, ZUGFeRD or XRechnung PDF, as its bytes, and the attachment's name."""
+    data = Path(path).read_bytes()
+    if data[:5] != b"%PDF-":
+        raise NotAnInvoice("not a PDF: there is no attached XML to extract")
+    return _xml_from_pdf(data)
+
+
 def load(path):
     path = Path(path)
     data = path.read_bytes()

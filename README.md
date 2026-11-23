@@ -96,6 +96,10 @@ not hold what it checks. In JSON, each file carries `rules`: for each rule asked
 `no-error`, `does-not-apply`, `not-checked`) and, when it does not apply, the `reason` (`seller-not-in-france`,
 `other-syntax`, `other-profile`, `not-in-invoice`).
 
+### The XML inside a PDF
+
+`lintvoice extract invoice.pdf` writes the XML attached to the PDF, the invoice's electronic data that the rules check, to `invoice.xml`.
+
 ## From a coding agent
 
 A skill ([Agent Skills](https://agentskills.io) format) tells a coding agent when to run lintvoice, how to read

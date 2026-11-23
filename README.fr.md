@@ -32,6 +32,8 @@ Pour les règles de totaux et de TVA (BR-CO-10 à 17, BR-S-08 et BR-S-09), lintv
 
 Pour une seule règle, `lintvoice check --rule BR-CO-15 facture.pdf` répond pour cette règle : elle échoue, elle ne trouve pas d'erreur, elle ne s'applique pas à la facture (et pourquoi), ou elle n'a pas pu être vérifiée. Les erreurs des autres règles tiennent en une ligne.
 
+`lintvoice extract facture.pdf` écrit le XML joint au PDF, les données électroniques de la facture, celles que vérifient les règles, dans `facture.xml`.
+
 Détails (jeux de règles, licences, codes de sortie, limites) : [README.md](README.md).
 
 ## Depuis un agent de code

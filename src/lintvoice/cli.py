@@ -1,6 +1,7 @@
-"""Command line: lintvoice check FILE..., lintvoice rules list|install.
+"""Command line: lintvoice check FILE..., lintvoice extract PDF..., lintvoice rules list|install.
 
-Exit codes: 0 no errors, 1 errors found, 2 a file could not be read as an invoice, 3 rule packs missing,
+Exit codes: 0 no errors, 1 errors found, 2 a file could not be read as an invoice (for extract: a PDF holds no invoice
+XML, or the file to write exists and differs), 3 rule packs missing,
 4 no errors found but a rule set could not run on a file (an error inside the official rule file).
 With --rule, the codes speak of the rules asked: 1 one of them fails, 4 one of them could not be checked.
 XML files found while walking a directory are skipped when they are not invoices (a build.xml, a config file);
@@ -130,6 +131,46 @@ def cmd_check(args, out):
     return code
 
 
+def cmd_extract(args, out):
+    """Write the XML attached to each PDF next to it (invoice.pdf: invoice.xml), or where -o says ("-": standard
+    output). A file that exists with other content is kept unless --force."""
+    if args.output and len(args.pdfs) > 1:
+        print("lintvoice: -o takes one PDF; without it, each PDF's XML goes next to it", file=sys.stderr)
+        return EXIT_UNREADABLE
+    code = EXIT_OK
+    for pdf in map(Path, args.pdfs):
+        try:
+            xml, name = document.attached_xml(pdf)
+        except FileNotFoundError:
+            print(f"lintvoice: {pdf}: file not found", file=sys.stderr)
+            code = EXIT_UNREADABLE
+            continue
+        except (document.NotAnInvoice, IsADirectoryError, PermissionError) as e:
+            print(f"lintvoice: {pdf}: {e}", file=sys.stderr)
+            code = EXIT_UNREADABLE
+            continue
+        if args.output == "-":
+            sys.stdout.flush()
+            getattr(out, "buffer", sys.stdout.buffer).write(xml)
+            continue
+        target = Path(args.output) if args.output else pdf.with_suffix(".xml")
+        if target.exists() and not args.force and target.read_bytes() != xml:
+            print(
+                f"lintvoice: {target} exists with other content: choose another name with -o, or --force to replace it",
+                file=sys.stderr,
+            )
+            code = EXIT_UNREADABLE
+            continue
+        try:
+            target.write_bytes(xml)
+        except OSError as e:
+            print(f"lintvoice: cannot write {target}: {e.strerror or e}", file=sys.stderr)
+            code = EXIT_UNREADABLE
+            continue
+        print(f"Wrote {target} ({name} from {pdf}).", file=out)
+    return code
+
+
 def cmd_rules_list(args, out):
     root = rulepacks.rules_dir(args.rules_dir)
     print(f"Rule packs in {root}", file=out)
@@ -184,6 +225,18 @@ def parser():
     check.add_argument("--color", choices=("auto", "always", "never"), default="auto")
     check.add_argument("--rules-dir", help="where the rule packs are installed")
     check.set_defaults(func=cmd_check)
+
+    extract = sub.add_parser(
+        "extract",
+        help="write the invoice XML attached to a Factur-X, ZUGFeRD or XRechnung PDF",
+        description="Write the invoice XML attached to a Factur-X, ZUGFeRD or XRechnung PDF.",
+    )
+    extract.add_argument("pdfs", nargs="+", metavar="PDF", help="PDF files; each one's XML goes next to it")
+    extract.add_argument(
+        "-o", "--output", metavar="FILE", help="write to FILE instead (one PDF; - for standard output)"
+    )
+    extract.add_argument("--force", action="store_true", help="replace a file that exists with other content")
+    extract.set_defaults(func=cmd_extract)
 
     rules = sub.add_parser("rules", help="list or install the rule packs")
     rules_sub = rules.add_subparsers(dest="rules_command", required=True)
