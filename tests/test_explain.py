@@ -245,12 +245,53 @@ def test_without_lines_allowances_or_documents_the_groups_are_empty():
     assert line["allowances"] == line["charges"] == line["attributes"] == []
 
 
-def test_terms_a_path_cannot_tell_apart_are_not_read():
-    """BT-111 is told from BT-110 by its currency, and BT-32 in UBL from BT-31 by its tax scheme."""
-    assert "BT-111" not in explain.read(invoices.xml(), "CII")["terms"]
+def _vat_total_in_euros_first(root):
+    """Move the VAT total in the VAT accounting currency (BT-111) before the one in the invoice's currency (BT-110)."""
+    first, second = root.findall(".//ram:TaxTotalAmount", invoices.NS)
+    first.addprevious(second)
+
+
+def test_the_vat_totals_are_told_apart_by_their_currency():
+    """BT-110 is the VAT total in the invoice's currency (BT-5), BT-111 the one in the VAT accounting currency (BT-6),
+    in whichever order the invoice gives them."""
+    dollars = invoices.french(currency="USD", tax_currency=("EUR", "0.9216"))
+    for edit in (None, _vat_total_in_euros_first):
+        terms = explain.read(invoices.xml(dollars, edit=edit), "CII")["terms"]
+        assert (terms["BT-5"], terms["BT-6"], terms["BT-110"], terms["BT-111"]) == ("USD", "EUR", "205.00", "188.93")
+    assert explain.read(invoices.xml(), "CII")["terms"]["BT-111"] == ""
+    if UBL_EXAMPLE is not None:
+        text = UBL_EXAMPLE.read_text(encoding="utf-8")
+        before = explain.read(text.encode(), "UBL")["terms"]
+        assert before["BT-110"] and before["BT-111"] == ""
+        # the same invoice with a VAT accounting currency, its VAT total in that currency given first
+        accounting = "USD" if before["BT-5"] == "EUR" else "EUR"
+        code = f"<cbc:DocumentCurrencyCode>{before['BT-5']}</cbc:DocumentCurrencyCode>"
+        text = text.replace(code, f"{code}<cbc:TaxCurrencyCode>{accounting}</cbc:TaxCurrencyCode>", 1)
+        at = text.index("<cac:TaxTotal>")
+        total = f'<cac:TaxTotal><cbc:TaxAmount currencyID="{accounting}">31.12</cbc:TaxAmount></cac:TaxTotal>'
+        terms = explain.read((text[:at] + total + text[at:]).encode(), "UBL")["terms"]
+        assert (terms["BT-110"], terms["BT-111"]) == (before["BT-110"], "31.12")
+
+
+def test_a_line_invoiced_object_identifier_is_read():
+    """BT-128, in CII under the line's settlement, in UBL its document reference."""
+
+    def object_id(root):
+        settle = root.find(".//ram:SpecifiedLineTradeSettlement", invoices.NS)
+        doc = etree.SubElement(settle, f"{{{invoices.NS['ram']}}}AdditionalReferencedDocument")
+        etree.SubElement(doc, f"{{{invoices.NS['ram']}}}IssuerAssignedID").text = "ABO-42"
+        etree.SubElement(doc, f"{{{invoices.NS['ram']}}}TypeCode").text = "130"
+        settle.find("ram:SpecifiedTradeSettlementLineMonetarySummation", invoices.NS).addnext(doc)
+
+    lines = explain.read(invoices.xml(edit=object_id), "CII")["lines"]
+    assert lines[0]["BT-128"] == "ABO-42" and lines[1]["BT-128"] == ""
+
+
+def test_bt_32_is_not_read_in_ubl():
+    """BT-32 in UBL is told from the VAT number (BT-31) by its tax scheme, which a path does not express."""
     assert "BT-32" in explain.read(invoices.xml(), "CII")["terms"]
     if UBL_EXAMPLE is not None:
-        assert not {"BT-32", "BT-111"} & explain.read(UBL_EXAMPLE.read_bytes(), "UBL")["terms"].keys()
+        assert "BT-32" not in explain.read(UBL_EXAMPLE.read_bytes(), "UBL")["terms"]
 
 
 NEW_PLACES = {

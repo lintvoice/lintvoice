@@ -16,6 +16,7 @@ from .document import PARSER
 
 SPEC = json.loads(files(__package__).joinpath("terms.json").read_text(encoding="utf-8"))
 NUMBER = re.compile(r"^-?\d+(\.\d+)?$")
+REFERENCE = re.compile(r"\{(BT-\d+)\}")
 
 
 def _find(node, path):
@@ -39,9 +40,13 @@ def _find(node, path):
     return nodes
 
 
-def _first(node, paths):
-    """What the first path that finds something finds: a term's path, or its list of paths."""
+def _first(node, paths, terms=None):
+    """What the first path that finds something finds: a term's path, or its list of paths. A '{BT-n}' in a path
+    stands for that header term's value, read before (terms): the VAT total in the invoice's currency (BT-110) and in
+    the VAT accounting currency (BT-111) are told apart that way."""
     for path in [paths] if isinstance(paths, str) else paths:
+        if terms is not None:
+            path = REFERENCE.sub(lambda m: terms.get(m.group(1), ""), path)
         if found := _find(node, path):
             return found
     return []
@@ -89,13 +94,14 @@ def read(xml, syntax):
     document level allowances and charges, and the additional supporting documents."""
     root = etree.fromstring(xml.lstrip(b"\xef\xbb\xbf"), PARSER)
     terms, schemes = {}, {}
-    for bt, paths in SPEC["header"].items():
-        if syntax not in paths:
-            continue
-        found = _first(root, paths[syntax])
+    header = {bt: paths[syntax] for bt, paths in SPEC["header"].items() if syntax in paths}
+    # the terms whose paths refer to another term's value come second, once that value is read
+    for bt in sorted(header, key=lambda bt: bool(REFERENCE.search(json.dumps(header[bt])))):
+        found = _first(root, header[bt], terms)
         terms[bt] = _text(found)
         if found and not isinstance(found[0], str) and found[0].get("schemeID"):
             schemes[bt] = found[0].get("schemeID")
+    terms = {bt: terms[bt] for bt in header}
     lines = [_line(line, syntax) for line in _find(root, SPEC["lines"][syntax])]
     breakdown = [_terms(tax, SPEC["vat_breakdown_terms"], syntax) for tax in _find(root, SPEC["vat_breakdown"][syntax])]
     allowances, charges = _split(root, SPEC["allowances_charges"], "allowance_terms", "charge_terms", syntax)
