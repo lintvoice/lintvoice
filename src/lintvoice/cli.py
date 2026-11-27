@@ -118,7 +118,7 @@ def cmd_check(args, out):
             print(b, file=out)
         print("", file=out)
         if skipped:
-            names = ", ".join(str(s) for s in skipped[:3]) + (
+            names = ", ".join(report.plain(s) for s in skipped[:3]) + (
                 f" and {len(skipped) - 3} more" if len(skipped) > 3 else ""
             )
             print(
@@ -142,11 +142,11 @@ def cmd_extract(args, out):
         try:
             xml, name = document.attached_xml(pdf)
         except FileNotFoundError:
-            print(f"lintvoice: {pdf}: file not found", file=sys.stderr)
+            print(f"lintvoice: {report.plain(pdf)}: file not found", file=sys.stderr)
             code = EXIT_UNREADABLE
             continue
         except (document.NotAnInvoice, IsADirectoryError, PermissionError) as e:
-            print(f"lintvoice: {pdf}: {e}", file=sys.stderr)
+            print(f"lintvoice: {report.plain(pdf)}: {report.plain(e)}", file=sys.stderr)
             code = EXIT_UNREADABLE
             continue
         if args.output == "-":
@@ -167,7 +167,7 @@ def cmd_extract(args, out):
             print(f"lintvoice: cannot write {target}: {e.strerror or e}", file=sys.stderr)
             code = EXIT_UNREADABLE
             continue
-        print(f"Wrote {target} ({name} from {pdf}).", file=out)
+        print(f"Wrote {report.plain(target)} ({report.plain(name)} from {report.plain(pdf)}).", file=out)
     return code
 
 

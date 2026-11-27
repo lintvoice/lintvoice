@@ -1,6 +1,7 @@
 """Turn results into a readable verdict (grouped by rule) or JSON."""
 
 import json
+import re
 import textwrap
 from dataclasses import dataclass
 
@@ -9,6 +10,16 @@ from . import __version__, explain, rulecheck
 # Schema errors come last: a missing element often shows up as a confusing "element not expected".
 LAYER_ORDER = {"en16931": 0, "factur-x": 1, "br-fr": 2, "extended-ctc-fr": 3, "xsd": 4}
 SEVERITY_ORDER = {"error": 0, "warning": 1}
+
+# Control characters: C0 (line breaks and the escape character among them), DEL and C1.
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
+def plain(text):
+    """Text that comes from a checked file (a value, an attached file's name, the file's own name), safe to print: a
+    control character is written as its code, like \\x1b. An escape sequence could redraw the terminal, and a line
+    break could forge a line of the report, or a workflow command in a CI log."""
+    return _CONTROL.sub(lambda m: m.group().encode("unicode_escape").decode("ascii"), str(text))
 
 
 @dataclass
@@ -129,8 +140,8 @@ def text_result(result, style, verbose=False, width=100):
     else:
         bad, unsure = bool(result.errors), bool(result.not_run)
     mark = style.red("✗") if bad else style.yellow("!") if unsure else style.green("✓")
-    lines = [f"{mark} {style.bold(str(doc.path))}", f"  {doc.label}"]
-    lines += [f"  {style.dim(n)}" for n in result.notes]
+    lines = [f"{mark} {style.bold(plain(doc.path))}", f"  {plain(doc.label)}"]
+    lines += [f"  {style.dim(plain(n))}" for n in result.notes]
     for n in result.not_run:
         lines += textwrap.wrap(
             f"{n.name} could not run on this file: its official rule file stopped with an error, "
@@ -140,7 +151,7 @@ def text_result(result, style, verbose=False, width=100):
             subsequent_indent="    ",
         )
         shown = n.error if verbose or len(n.error) <= 220 else n.error[:217] + "…"
-        lines += textwrap.wrap(f"Error: {shown}", width=width, initial_indent="    ", subsequent_indent="    ")
+        lines += textwrap.wrap(f"Error: {plain(shown)}", width=width, initial_indent="    ", subsequent_indent="    ")
     if asked:
         lines += [f"  {_answer_line(a)}" for a in asked]
     else:
@@ -152,18 +163,20 @@ def text_result(result, style, verbose=False, width=100):
         lines.append(f"  {sev} {style.bold(g.rule)}  ×{g.count}")
         calc = explain.computation(g.rule, values) if values else None
         if calc:
-            lines += textwrap.wrap(computation_line(calc), width=width, initial_indent=indent, subsequent_indent=indent)
+            lines += textwrap.wrap(
+                plain(computation_line(calc)), width=width, initial_indent=indent, subsequent_indent=indent
+            )
         for message, locations in g.messages.items():
             shown = message if verbose or len(message) <= 220 else message[:217] + "…"
             prefix = f"{indent}×{len(locations)} " if len(g.messages) > 1 else indent
-            lines += textwrap.wrap(shown, width=width, initial_indent=prefix, subsequent_indent=" " * len(prefix)) or [
-                prefix
-            ]
+            lines += textwrap.wrap(
+                plain(shown), width=width, initial_indent=prefix, subsequent_indent=" " * len(prefix)
+            ) or [prefix]
             locs = [loc for loc in locations if loc]
             if locs:
                 more = "" if verbose or len(locs) == 1 else style.dim(f" (+{len(locs) - 1} more)")
                 for loc in locs if verbose else locs[:1]:
-                    lines.append(f"{' ' * len(prefix)}{style.dim('at ' + loc)}{more if loc == locs[0] else ''}")
+                    lines.append(f"{' ' * len(prefix)}{style.dim('at ' + plain(loc))}{more if loc == locs[0] else ''}")
     if asked:
         others = {f.rule for f in result.errors if not _mine(result, f.rule)}
         lines.append("")
@@ -178,7 +191,7 @@ def text_result(result, style, verbose=False, width=100):
 
 
 def text_error(path, message, style):
-    return f"{style.red('!')} {style.bold(str(path))}\n  {message}"
+    return f"{style.red('!')} {style.bold(plain(path))}\n  {plain(message)}"
 
 
 def header(rule_sets, style):

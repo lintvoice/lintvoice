@@ -112,3 +112,38 @@ def test_hostile_file_gets_a_clean_answer_within_budget(write, tmp_path, name):
         peak = int(peak_file.read_text())
         peak_mib = peak / (1 << 20) if sys.platform == "darwin" else peak / 1024  # bytes on macOS, KiB on Linux
         assert peak_mib < MEMORY_BUDGET, f"{peak_mib:.0f} MiB"
+
+
+# What a file says is printed as text, never obeyed: an escape sequence would redraw the terminal, and a line break
+# would let a file write its own lines into the report, or a workflow command into a CI log.
+FORGED = "\x1b[2J\x1b[32m✓ all good\x1b[0m\n::error::forged"
+
+
+def _no_forgery(text):
+    assert "\x1b" not in text
+    assert not any(line.startswith("::") for line in text.splitlines())
+    assert "\\x1b[2J" in text and "\\n::error::forged" in text  # still shown, as its codes
+
+
+def test_attachment_name_with_control_characters_is_printed_as_text(lintvoice, write):
+    pdf = write("named.pdf", _pdf((f"{FORGED}.xml", invoices.xml())))
+    r = lintvoice("check", "--color", "never", pdf)
+    assert r.code == 0
+    _no_forgery(r.out)
+    r = lintvoice("extract", "-o", pdf.with_name("out.xml"), pdf)
+    assert r.code == 0
+    _no_forgery(r.out)
+
+
+def test_value_with_a_line_break_cannot_forge_a_report_line(lintvoice, write):
+    head, seller = invoices.xml().split(b"<ram:SellerTradeParty>", 1)
+    country = b"<ram:CountryID>FR</ram:CountryID>"
+    assert country in seller
+    data = (
+        head
+        + b"<ram:SellerTradeParty>"
+        + seller.replace(country, b"<ram:CountryID>DE\n::error::forged</ram:CountryID>", 1)
+    )
+    r = lintvoice("check", "--color", "never", write("country.xml", data))
+    assert "the seller's country is DE\\n::error::forged" in r.out
+    assert not any(line.startswith("::") for line in r.out.splitlines())
